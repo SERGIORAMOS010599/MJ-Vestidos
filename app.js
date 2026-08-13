@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
     miCatalogo.addDress(vestido3);
     miCatalogo.addDress(vestido4);
     miCatalogo.addDress(vestido5);
-    miCatalogo.addDress(vestido6);
+    miCatalogo.addDress(vestido6.png);
 
     // Mostrar en pantalla
     miCatalogo.render();
