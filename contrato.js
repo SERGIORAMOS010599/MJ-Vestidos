@@ -1,4 +1,28 @@
 document.addEventListener("DOMContentLoaded", () => {
+    // --- SISTEMA DE BLOQUEO (CERRADURA DIGITAL) ---
+    const authOverlay = document.getElementById('auth-overlay');
+    const pinInput = document.getElementById('admin-pin');
+    const btnUnlock = document.getElementById('btn-unlock');
+
+    // Cambia 'MJ2026' por la contraseña que quieras que use María José
+    const CLAVE_SECRETA = 'Majo-2026';
+
+    btnUnlock.addEventListener('click', () => {
+        if (pinInput.value === CLAVE_SECRETA) {
+            authOverlay.style.display = 'none'; // Desbloquea la pantalla
+        } else {
+            alert('Clave incorrecta. Acceso denegado.');
+            pinInput.value = ''; // Limpia el recuadro
+        }
+    });
+
+    // Permitir desbloquear presionando "Enter"
+    pinInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            btnUnlock.click();
+        }
+    });
+    // ----------------------------------------------
     // 1. Obtener los datos de la URL
     const urlParams = new URLSearchParams(window.location.search);
     
