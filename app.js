@@ -176,8 +176,8 @@ class Catalog {
                 
                 const total = document.getElementById('summary-total').innerText;
 
-                // Crear URL de Contrato
-                const baseUrl = window.location.href.split('index.html')[0].replace(/\/$/, "");
+                // Crear URL de Contrato (Solución limpia que ignora anclas como #catalogo)
+                const baseUrl = window.location.origin + window.location.pathname.replace(/index\.html$/, "").replace(/\/$/, "");
                 const params = new URLSearchParams({
                     vestido: this.selectedDress.name,
                     cliente: clientName,
