@@ -151,5 +151,99 @@
             </form>
         </div>
     </div>
+    <!-- MODAL DE RESERVA -->
+    <div id="booking-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            
+            <div class="modal-header">
+                <img id="modal-dress-img" src="" alt="Vestido Seleccionado" class="modal-dress-thumb">
+                <div>
+                    <h2 id="modal-dress-name">Nombre del Vestido</h2>
+                    <p id="modal-dress-price" class="modal-price-tag">$0.00 MXN / noche</p>
+                </div>
+            </div>
+
+            <form id="booking-form">
+                <div class="form-group">
+                    <label for="full-name">Nombre y Apellidos *</label>
+                    <input type="text" id="full-name" required placeholder="Ej. María López">
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Número de Celular *</label>
+                    <input type="tel" id="phone" required placeholder="Ej. 6621234567">
+                </div>
+
+                <div class="form-group">
+                    <label for="address">Dirección de Entrega / Domicilio *</label>
+                    <input type="text" id="address" required placeholder="Calle, Número, Colonia">
+                </div>
+
+                <div class="form-group">
+                    <label for="size">Selecciona tu Talla *</label>
+                    <select id="size" required>
+                        <option value="" disabled selected>Elige una talla</option>
+                        <option value="Chica (S)">Chica (S)</option>
+                        <option value="Mediana (M)">Mediana (M)</option>
+                        <option value="Grande (L)">Grande (L)</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="start-date">Fecha de Inicio *</label>
+                        <input type="date" id="start-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="end-date">Fecha del Úlitmo Día *</label>
+                        <input type="date" id="end-date" required>
+                    </div>
+                </div>
+
+                <!-- Campo calculado para la devolución -->
+                <div class="form-group highlight-box">
+                    <label>Fecha Obligatoria de Devolución:</label>
+                    <p id="return-date-display">Selecciona primero las fechas de renta</p>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="pickup-time">Horario de Recolección *</label>
+                        <select id="pickup-time" required>
+                            <option value="10:00 AM - 11:00 AM">10:00 AM - 11:00 AM</option>
+                            <option value="11:00 AM - 12:00 PM">11:00 AM - 12:00 PM</option>
+                            <option value="12:00 PM - 01:00 PM">12:00 PM - 01:00 PM</option>
+                            <option value="01:00 PM - 02:00 PM">01:00 PM - 02:00 PM</option>
+                            <option value="02:00 PM - 03:00 PM">02:00 PM - 03:00 PM</option>
+                            <option value="03:00 PM - 04:00 PM">03:00 PM - 04:00 PM</option>
+                            <option value="04:00 PM - 05:00 PM">04:00 PM - 05:00 PM</option>
+                            <option value="05:00 PM - 06:00 PM">05:00 PM - 06:00 PM</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="return-time">Horario de Devolución *</label>
+                        <select id="return-time" required>
+                            <option value="10:00 AM - 11:00 AM">10:00 AM - 11:00 AM</option>
+                            <option value="11:00 AM - 12:00 PM">11:00 AM - 12:00 PM</option>
+                            <option value="12:00 PM - 01:00 PM">12:00 PM - 01:00 PM</option>
+                            <option value="01:00 PM - 02:00 PM">01:00 PM - 02:00 PM</option>
+                            <option value="02:00 PM - 03:00 PM">02:00 PM - 03:00 PM</option>
+                            <option value="03:00 PM - 04:00 PM">03:00 PM - 04:00 PM</option>
+                            <option value="04:00 PM - 05:00 PM">04:00 PM - 05:00 PM</option>
+                            <option value="05:00 PM - 06:00 PM">05:00 PM - 06:00 PM</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="price-summary">
+                    <p>Días de renta: <span id="summary-days">0</span></p>
+                    <h3>Total a pagar: <span id="summary-total">$0.00 MXN</span></h3>
+                </div>
+
+                <button type="submit" class="btn-primary btn-block">Confirmar Solicitud por WhatsApp</button>
+            </form>
+        </div>
+    </div>
 </body>
 </html>
