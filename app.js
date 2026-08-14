@@ -157,6 +157,10 @@ class Catalog {
 
                 const ineUrl = data.url;
 
+// Obtener el link generado en tu Drive
+                const ineUrl = data.url;
+
+                // Recopilar el resto de los datos del formulario
                 const phone = document.getElementById('phone').value;
                 const address = document.getElementById('address').value;
                 const size = document.getElementById('size').value;
@@ -169,25 +173,32 @@ class Catalog {
                 
                 const total = document.getElementById('summary-total').innerText;
 
-                const msg = `*NUEVA SOLICITUD DE RENTA - MJ VESTIDOS*%0A%0A` +
-                    `*Vestido:* ${this.selectedDress.name}%0A` +
-                    `*Cliente:* ${clientName}%0A` +
-                    `*Teléfono:* ${phone}%0A` +
-                    `*Dirección:* ${address}%0A` +
-                    `*Talla:* ${size}%0A%0A` +
-                    `*--- LOGÍSTICA ---*%0A` +
-                    `*1. Fecha de Entrega:* ${deliveryDateText} (${pickupTime})%0A` +
-                    `*2. Fecha de Uso:* ${useDateVal}%0A` +
-                    `*3. Devolución Obligatoria:* ${returnDateText} (${returnTime})%0A%0A` +
-                    `*TOTAL A PAGAR:* ${total} (Incluye depósito)%0A%0A` +
+                // Construir mensaje usando saltos de línea nativos (\n)
+                const msg = `*NUEVA SOLICITUD DE RENTA - MJ VESTIDOS*\n\n` +
+                    `*Vestido:* ${this.selectedDress.name}\n` +
+                    `*Cliente:* ${clientName}\n` +
+                    `*Teléfono:* ${phone}\n` +
+                    `*Dirección:* ${address}\n` +
+                    `*Talla:* ${size}\n\n` +
+                    `*--- LOGÍSTICA ---*\n` +
+                    `*1. Fecha de Entrega:* ${deliveryDateText} (${pickupTime})\n` +
+                    `*2. Fecha de Uso:* ${useDateVal}\n` +
+                    `*3. Devolución Obligatoria:* ${returnDateText} (${returnTime})\n\n` +
+                    `*TOTAL A PAGAR:* ${total} (Incluye depósito)\n\n` +
                     `*📎 LINK DE INE:* ${ineUrl}`;
 
-                window.open(`https://wa.me/526623175465?text=${msg}`, '_blank');
+                // Codificamos el texto para que los espacios y símbolos no rompan el enlace
+                const encodedMsg = encodeURIComponent(msg);
+                const whatsappUrl = `https://wa.me/526623175465?text=${encodedMsg}`;
 
+                // Restaurar modal y botón antes de salir de la página
                 submitBtn.innerText = "Confirmar Solicitud por WhatsApp";
                 submitBtn.disabled = false;
                 submitBtn.style.backgroundColor = "";
                 modal.style.display = 'none';
+
+                // Redirigir en la misma pestaña (Evita el bloqueador de Pop-ups de los navegadores)
+                window.location.href = whatsappUrl;
 
             } catch (error) {
                 alert("Hubo un error de conexión al subir la imagen. Intenta nuevamente.");
