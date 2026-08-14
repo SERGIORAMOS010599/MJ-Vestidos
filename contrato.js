@@ -71,10 +71,13 @@ document.addEventListener("DOMContentLoaded", () => {
             const base64Pdf = await pdfWorker.output('datauristring');
             
             // 3. Preparar el envío al MISMO Script de Google
+           // 3. Preparar el envío al MISMO Script de Google
             const payload = {
                 base64: base64Pdf,
                 filename: opt.filename,
-                mimeType: 'application/pdf'
+                mimeType: 'application/pdf',
+                // PON AQUÍ EL ID DE TU NUEVA CARPETA DE CONTRATOS
+                folderId: '14MRtoYDZJ36Qd2d_fd2K206RdhKsI0KD' 
             };
 
             const scriptUrl = 'https://script.google.com/macros/s/AKfycbx6iX_qUnAipUhzQNhexvSRiXCP8kgpe8zWAYBtcwN5RkNHhZxsNnbTxGm2ocj2pl8/exec';
