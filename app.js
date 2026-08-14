@@ -104,6 +104,7 @@ class Catalog {
         startDateInput.addEventListener('change', calculateRental);
 
         // Envío del formulario conectando con Google Drive
+// Envío del formulario conectando con Google Drive y WhatsApp
         document.getElementById('booking-form').onsubmit = async (e) => {
             e.preventDefault();
             
@@ -115,6 +116,10 @@ class Catalog {
                 alert("Por favor, adjunta la foto de tu INE.");
                 return;
             }
+
+            // 1. TRUCO ANTI-BLOQUEADOR: Abre la pestaña inmediatamente para que el navegador no la bloquee
+            const ventanaEspera = window.open('', '_blank');
+            ventanaEspera.document.write('<h2 style="font-family:sans-serif; text-align:center; margin-top:20%; color:#333;">Procesando solicitud...<br>Redirigiendo a WhatsApp en unos segundos. 👗✨</h2>');
 
             submitBtn.innerText = "Guardando INE de forma segura...";
             submitBtn.disabled = true;
@@ -139,11 +144,9 @@ class Catalog {
                     base64: base64Data,
                     filename: fileName,
                     mimeType: file.type,
-                    // PON AQUÍ EL ID DE TU CARPETA DE INEs
-                    folderId: '1ttKQlN2py9UUBKcGhDsnjZULQDuDpU9S' 
+                    folderId: '1ttKQlN2py9UUBKcGhDsnjZULQDuDpU9S' // ID de la carpeta de INEs
                 };
-               
-                // URL de tu Google Apps Script
+
                 const scriptUrl = 'https://script.google.com/macros/s/AKfycbx6iX_qUnAipUhzQNhexvSRiXCP8kgpe8zWAYBtcwN5RkNHhZxsNnbTxGm2ocj2pl8/exec';
 
                 const response = await fetch(scriptUrl, {
@@ -156,10 +159,9 @@ class Catalog {
                 if (!data.success) {
                     throw new Error(data.error || "No se pudo guardar la imagen en Drive.");
                 }
-// Obtener el link generado en tu Drive
+
                 const ineUrl = data.url;
 
-                // Recopilar el resto de los datos del formulario
                 const phone = document.getElementById('phone').value;
                 const address = document.getElementById('address').value;
                 const size = document.getElementById('size').value;
@@ -172,12 +174,8 @@ class Catalog {
                 
                 const total = document.getElementById('summary-total').innerText;
 
-                // Construir mensaje usando saltos de línea nativos (\n)
-// --- CÓDIGO NUEVO PARA EL LINK DEL CONTRATO ---
-                // Obtenemos la URL actual de tu sitio para crear el link dinámico
+                // Crear URL de Contrato
                 const baseUrl = window.location.href.split('index.html')[0].replace(/\/$/, "");
-                
-                // Creamos los parámetros para enviarlos a la otra página
                 const params = new URLSearchParams({
                     vestido: this.selectedDress.name,
                     cliente: clientName,
@@ -188,10 +186,8 @@ class Catalog {
                     devolucion: `${returnDateText} (${returnTime})`,
                     total: total
                 }).toString();
-
                 const contratoLink = `${baseUrl}/contrato.html?${params}`;
 
-                // Construir mensaje usando saltos de línea nativos (\n)
                 const msg = `*NUEVA SOLICITUD DE RENTA - MJ VESTIDOS*\n\n` +
                     `*Vestido:* ${this.selectedDress.name}\n` +
                     `*Cliente:* ${clientName}\n` +
@@ -206,20 +202,22 @@ class Catalog {
                     `*📎 LINK DE INE:* ${ineUrl}\n` +
                     `*📝 LINK DE CONTRATO:* ${contratoLink}`;
 
-                // Codificamos el texto para que los espacios y símbolos no rompan el enlace
                 const encodedMsg = encodeURIComponent(msg);
-                const whatsappUrl = `https://wa.me/526623175465?text=${encodedMsg}`;
+                
+                // Usamos la API oficial (api.whatsapp.com) en lugar de wa.me para que sea 100% estable
+                const whatsappUrl = `https://api.whatsapp.com/send?phone=526623175465&text=${encodedMsg}`;
 
-                // Restaurar modal y botón antes de salir de la página
+                // 2. TRUCO ANTI-BLOQUEADOR: Apuntamos la pestaña que estaba esperando hacia WhatsApp
+                ventanaEspera.location.href = whatsappUrl;
+
                 submitBtn.innerText = "Confirmar Solicitud por WhatsApp";
                 submitBtn.disabled = false;
                 submitBtn.style.backgroundColor = "";
                 modal.style.display = 'none';
 
-                // Redirigir en la misma pestaña
-                window.location.href = whatsappUrl;
-
             } catch (error) {
+                // Si ocurre un error, cerramos la pestaña de espera
+                ventanaEspera.close();
                 alert("Hubo un error de conexión al subir la imagen. Intenta nuevamente.");
                 console.error(error);
                 submitBtn.innerText = "Confirmar Solicitud por WhatsApp";
