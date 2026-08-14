@@ -62,7 +62,7 @@ class Catalog {
         // --- RESTAURAR EL FORMULARIO (Quitar botón de WhatsApp si se abrió antes) ---
         const submitBtn = document.querySelector('#booking-form button[type="submit"]');
         submitBtn.style.display = 'block';
-        submitBtn.innerText = "Confirmar Solicitud y Subir INE";
+        submitBtn.innerText = "Confirmar Solicitud";
         submitBtn.disabled = false;
         submitBtn.style.backgroundColor = "";
 
