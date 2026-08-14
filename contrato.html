@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contrato de Renta | MJ Vestidos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- Librerías para Firma y PDF -->
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        body { font-family: 'Montserrat', sans-serif; background-color: #f4f4f4; padding: 20px; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 40px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #111; border-bottom: 2px solid #d4af37; padding-bottom: 10px; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; font-size: 0.9rem; }
+        .info-item strong { color: #111; }
+        .terms { font-size: 0.8rem; text-align: justify; margin: 30px 0; color: #555; line-height: 1.5; }
+        .signature-section { margin-top: 30px; text-align: center; }
+        canvas { border: 1px solid #ccc; background: #fcfcfc; width: 100%; max-width: 400px; height: 150px; cursor: crosshair; }
+        .btn { background: #111; color: #fff; border: none; padding: 12px 20px; cursor: pointer; margin-top: 15px; font-weight: bold; width: 100%; max-width: 400px; }
+        .btn-clear { background: #ccc; color: #333; }
+        /* Ocultar botones en el PDF final */
+        .no-print { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="pdf-content">
+        <h1>Contrato de Renta</h1>
+        <p style="text-align: center;"><strong>MJ Vestidos</strong></p>
+
+        <div class="info-grid">
+            <div class="info-item"><strong>Cliente:</strong> <span id="c-cliente"></span></div>
+            <div class="info-item"><strong>Teléfono:</strong> <span id="c-telefono"></span></div>
+            <div class="info-item"><strong>Vestido:</strong> <span id="c-vestido"></span></div>
+            <div class="info-item"><strong>Dirección:</strong> <span id="c-direccion"></span></div>
+            <div class="info-item"><strong>Fecha de Uso:</strong> <span id="c-uso"></span></div>
+            <div class="info-item"><strong>Total y Depósito:</strong> <span id="c-total"></span></div>
+            <div class="info-item"><strong>Entrega:</strong> <span id="c-entrega"></span></div>
+            <div class="info-item"><strong>Devolución:</strong> <span id="c-devolucion"></span></div>
+        </div>
+
+        <div class="terms">
+            <h3>Términos y Condiciones</h3>
+            <p>1. <strong>Cuidado del Vestido:</strong> El cliente se compromete a devolver el vestido en las mismas condiciones en las que fue entregado. Queda prohibido lavar, planchar, cortar, pegar o realizar cualquier alteración al vestido.</p>
+            <p>2. <strong>Penalizaciones por Daño:</strong> En caso de manchas extremas, rasgaduras, quemaduras o pérdida parcial/total del vestido, el depósito no será devuelto y el cliente deberá cubrir el costo de reparación o el valor total de reposición del vestido.</p>
+            <p>3. <strong>Retrasos en la Devolución:</strong> La devolución debe realizarse en la fecha y horario estipulado. Por cada día de retraso se cobrará una penalización que será descontada del depósito.</p>
+            <p>4. <strong>Reembolso del Depósito:</strong> El depósito será reembolsado íntegramente al momento de la devolución, una vez que el vestido haya sido inspeccionado y se verifique que no presenta daños.</p>
+        </div>
+
+        <div class="signature-section">
+            <p><strong>Firma de Conformidad del Cliente</strong></p>
+            <canvas id="signature-pad"></canvas>
+            <p style="border-top: 1px solid #111; width: 300px; margin: 5px auto 0; padding-top: 5px;" id="firma-nombre"></p>
+        </div>
+    </div>
+
+    <!-- Controles que NO saldrán en el PDF -->
+    <div class="no-print">
+        <button class="btn btn-clear" id="clear-signature">Limpiar Firma</button>
+        <button class="btn" id="save-pdf">Guardar, Descargar y Enviar a Drive</button>
+    </div>
+
+    <script src="contrato.js"></script>
+</body>
+</html>
