@@ -221,7 +221,7 @@ class Catalog {
                 successDiv.style.borderRadius = '8px';
                 
                 successDiv.innerHTML = `
-                    <h3 style="color: #25d366; margin-bottom: 10px; font-size: 1.2rem;">¡INE Guardada! ✅</h3>
+                    <h3 style="color: #25d366; margin-bottom: 10px; font-size: 1.2rem;">¡Informacion Guardada! ✅</h3>
                     <p style="margin-bottom: 15px; font-size: 0.9rem; color: #333;">Todo listo. Haz clic en el botón verde para enviar tu solicitud.</p>
                     <a href="${whatsappUrl}" target="_blank" style="background-color: #25d366; color: white; display: block; text-decoration: none; padding: 15px; border-radius: 5px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                         📲 Enviar a WhatsApp
