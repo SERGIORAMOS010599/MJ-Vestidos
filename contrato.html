@@ -24,7 +24,16 @@
     </style>
 </head>
 <body>
-
+<!-- PANTALLA DE BLOQUEO PARA ADMINISTRADOR -->
+    <div id="auth-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #111; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #fff;">
+        <h2 style="font-family: 'Playfair Display', serif; margin-bottom: 10px; font-size: 2rem; color: #d4af37;">MJ Vestidos</h2>
+        <p style="margin-bottom: 20px; font-size: 0.9rem; color: #ccc;">Área restringida. Solo personal autorizado.</p>
+        
+        <input type="password" id="admin-pin" placeholder="Clave de acceso" style="padding: 12px; font-size: 1rem; text-align: center; border-radius: 4px; border: none; outline: none; margin-bottom: 15px; width: 250px;">
+        
+        <button id="btn-unlock" class="btn" style="background-color: #d4af37; color: #111; width: 250px;">Desbloquear Contrato</button>
+    </div>
+    
     <div class="container" id="pdf-content">
         <h1>Contrato de Renta</h1>
         <p style="text-align: center;"><strong>MJ Vestidos</strong></p>
