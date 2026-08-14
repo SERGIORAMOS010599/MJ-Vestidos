@@ -1,5 +1,4 @@
 class Dress {
-    // Aquí está el parámetro 'deposit' incluido
     constructor(id, name, color, price, deposit, imageUrl, description) {
         this.id = id;
         this.name = name;
@@ -54,12 +53,22 @@ class Catalog {
 
         document.getElementById('booking-form').reset();
         
-        // Inicializar los montos incluyendo el depósito
         document.getElementById('summary-rent').innerText = '$0.00 MXN';
         document.getElementById('summary-deposit').innerText = '$0.00 MXN';
         document.getElementById('summary-total').innerText = '$0.00 MXN';
         document.getElementById('return-date-display').innerText = 'Selecciona primero las fechas de renta';
         document.getElementById('delivery-date-display').innerText = 'Selecciona la fecha de uso';
+
+        // --- RESTAURAR EL FORMULARIO (Quitar botón de WhatsApp si se abrió antes) ---
+        const submitBtn = document.querySelector('#booking-form button[type="submit"]');
+        submitBtn.style.display = 'block';
+        submitBtn.innerText = "Confirmar Solicitud y Subir INE";
+        submitBtn.disabled = false;
+        submitBtn.style.backgroundColor = "";
+
+        const successDiv = document.getElementById('success-wa-div');
+        if (successDiv) successDiv.remove();
+        // ----------------------------------------------------------------------------
 
         document.getElementById('booking-modal').style.display = 'block';
     }
@@ -90,7 +99,6 @@ class Catalog {
                 document.getElementById('delivery-date-display').innerText = deliveryDate.toLocaleDateString('es-MX', options);
                 document.getElementById('return-date-display').innerText = returnDate.toLocaleDateString('es-MX', options);
 
-                // Calcular totales sumando el depósito
                 const rentCost = this.selectedDress.price;
                 const depositCost = this.selectedDress.deposit;
                 const totalCost = rentCost + depositCost;
@@ -103,8 +111,6 @@ class Catalog {
 
         startDateInput.addEventListener('change', calculateRental);
 
-        // Envío del formulario conectando con Google Drive
-// Envío del formulario conectando con Google Drive y WhatsApp
         document.getElementById('booking-form').onsubmit = async (e) => {
             e.preventDefault();
             
@@ -117,11 +123,7 @@ class Catalog {
                 return;
             }
 
-            // 1. TRUCO ANTI-BLOQUEADOR: Abre la pestaña inmediatamente para que el navegador no la bloquee
-            const ventanaEspera = window.open('', '_blank');
-            ventanaEspera.document.write('<h2 style="font-family:sans-serif; text-align:center; margin-top:20%; color:#333;">Procesando solicitud...<br>Redirigiendo a WhatsApp en unos segundos. 👗✨</h2>');
-
-            submitBtn.innerText = "Guardando INE de forma segura...";
+            submitBtn.innerText = "Guardando INE en Drive (Espera unos segundos)...";
             submitBtn.disabled = true;
             submitBtn.style.backgroundColor = "#666";
 
@@ -203,36 +205,47 @@ class Catalog {
                     `*📝 LINK DE CONTRATO:* ${contratoLink}`;
 
                 const encodedMsg = encodeURIComponent(msg);
+                const whatsappUrl = `https://wa.me/526623175465?text=${encodedMsg}`;
+
+                // --- BOTÓN INFALIBLE DE WHATSAPP ---
+                submitBtn.style.display = 'none'; // Ocultamos el botón original
+
+                const formElement = document.getElementById('booking-form');
+                let successDiv = document.createElement('div');
+                successDiv.id = 'success-wa-div';
+                successDiv.style.textAlign = 'center';
+                successDiv.style.marginTop = '20px';
+                successDiv.style.padding = '15px';
+                successDiv.style.backgroundColor = '#f0fff4';
+                successDiv.style.border = '1px solid #25d366';
+                successDiv.style.borderRadius = '8px';
                 
-                // Usamos la API oficial (api.whatsapp.com) en lugar de wa.me para que sea 100% estable
-                const whatsappUrl = `https://api.whatsapp.com/send?phone=526623175465&text=${encodedMsg}`;
-
-                // 2. TRUCO ANTI-BLOQUEADOR: Apuntamos la pestaña que estaba esperando hacia WhatsApp
-                ventanaEspera.location.href = whatsappUrl;
-
-                submitBtn.innerText = "Confirmar Solicitud por WhatsApp";
-                submitBtn.disabled = false;
-                submitBtn.style.backgroundColor = "";
-                modal.style.display = 'none';
+                successDiv.innerHTML = `
+                    <h3 style="color: #25d366; margin-bottom: 10px; font-size: 1.2rem;">¡INE Guardada! ✅</h3>
+                    <p style="margin-bottom: 15px; font-size: 0.9rem; color: #333;">Todo listo. Haz clic en el botón verde para enviar tu solicitud.</p>
+                    <a href="${whatsappUrl}" target="_blank" style="background-color: #25d366; color: white; display: block; text-decoration: none; padding: 15px; border-radius: 5px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        📲 Enviar a WhatsApp
+                    </a>
+                `;
+                
+                formElement.appendChild(successDiv);
+                // --------------------------------------
 
             } catch (error) {
-                // Si ocurre un error, cerramos la pestaña de espera
-                ventanaEspera.close();
                 alert("Hubo un error de conexión al subir la imagen. Intenta nuevamente.");
                 console.error(error);
-                submitBtn.innerText = "Confirmar Solicitud por WhatsApp";
+                submitBtn.innerText = "Confirmar Solicitud y Subir INE";
                 submitBtn.disabled = false;
                 submitBtn.style.backgroundColor = "";
             }
         };
     }
-} // ¡Esta es la llave que faltaba para cerrar la clase Catalog!
+} 
 
 // Inicialización Global
 document.addEventListener('DOMContentLoaded', () => {
     window.appCatalog = new Catalog('dress-container');
 
-    // Aquí están configurados con: Precio 550, Depósito 300
     window.appCatalog.addDress(new Dress(1, 'Pasión Rubí', 'Vino / Tinto', 550, 300, 'img/vestido1.png', 'Elegante vestido con corpiño de encaje floral, finas transparencias y una falda fluida.'));
     window.appCatalog.addDress(new Dress(2, 'Brillo Dorado', 'Oro', 550, 300, 'img/vestido2.png', 'Deslumbrante diseño de lentejuelas ceñido al cuerpo con delicados tirantes.'));
     window.appCatalog.addDress(new Dress(3, 'Destello Celeste', 'Azul Celeste', 550, 300, 'img/vestido3.png', 'Audaz diseño con corsé estructurado, pedrería lineal y abertura en pierna.'));
