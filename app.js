@@ -154,9 +154,6 @@ class Catalog {
                 if (!data.success) {
                     throw new Error(data.error || "No se pudo guardar la imagen en Drive.");
                 }
-
-                const ineUrl = data.url;
-
 // Obtener el link generado en tu Drive
                 const ineUrl = data.url;
 
