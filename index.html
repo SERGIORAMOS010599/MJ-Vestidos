@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MJ Vestidos | Renta de Vestidos Elegantes</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400&family=Playfair+Display:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Playfair+Display:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -31,14 +31,12 @@
     <section id="catalogo" class="catalog-section">
         <h2>Nuestra Colección</h2>
         <div class="divider"></div>
-        <!-- Aquí se inyectarán los vestidos usando JavaScript -->
         <div id="dress-container" class="grid-container"></div>
     </section>
 
-    <!-- SECCIÓN DE CONTACTO ACTUALIZADA -->
+    <!-- SECCIÓN DE CONTACTO -->
     <footer id="contacto">
         <div class="contact-profile">
-            <!-- Aquí mandamos llamar la imagen que subiste -->
             <img src="img/Majo.png" alt="Maria Jose Molina" class="profile-img">
             <h3>María José Molina</h3>
             <p class="subtitle">Atención Personalizada</p>
@@ -56,7 +54,6 @@
         <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" class="wa-icon">
     </a>
 
-    <script src="app.js"></script>
     <!-- MODAL DE RESERVA -->
     <div id="booking-modal" class="modal">
         <div class="modal-content">
@@ -66,11 +63,11 @@
                 <img id="modal-dress-img" src="" alt="Vestido Seleccionado" class="modal-dress-thumb">
                 <div>
                     <h2 id="modal-dress-name">Nombre del Vestido</h2>
-                    <p id="modal-dress-price" class="modal-price-tag">$550.00 MXN / noche</p>
+                    <p id="modal-dress-price" class="modal-price-tag">$0.00 MXN / noche</p>
                 </div>
             </div>
 
-<form id="booking-form">
+            <form id="booking-form">
                 <div class="form-group">
                     <label for="full-name">Nombre y Apellidos *</label>
                     <input type="text" id="full-name" required placeholder="Ej. María López">
@@ -86,6 +83,13 @@
                     <input type="text" id="address" required placeholder="Calle, Número, Colonia">
                 </div>
 
+                <!-- CAMPO INE -->
+                <div class="form-group highlight-box" style="border-left-color: #333;">
+                    <label for="ine-image">Identificación Oficial (INE) *</label>
+                    <p style="font-size: 0.8rem; margin-bottom: 8px; color: #555;">Toma una foto o sube una imagen de tu INE de frente.</p>
+                    <input type="file" id="ine-image" accept="image/*" capture="environment" required style="background: #fff; padding: 5px;">
+                </div>
+
                 <div class="form-group">
                     <label for="size">Selecciona tu Talla *</label>
                     <select id="size" required>
@@ -96,7 +100,7 @@
                     </select>
                 </div>
 
-                <!-- SECCIÓN: FECHA DE USO Y HORARIOS (Movidos hacia arriba) -->
+                <!-- FECHA DE USO Y HORARIOS -->
                 <div class="form-group">
                     <label for="start-date">Fecha de Uso *</label>
                     <input type="date" id="start-date" required>
@@ -131,7 +135,7 @@
                     </div>
                 </div>
 
-                <!-- SECCIÓN: CÁLCULOS AUTOMÁTICOS DE ENTREGA Y DEVOLUCIÓN -->
+                <!-- CÁLCULOS AUTOMÁTICOS -->
                 <div class="form-group highlight-box">
                     <label>Fecha de Entrega (1 día antes):</label>
                     <p id="delivery-date-display">Selecciona la fecha de uso</p>
@@ -140,14 +144,18 @@
                     <p id="return-date-display">Selecciona la fecha de uso</p>
                 </div>
 
+                <!-- RESUMEN DE PRECIOS -->
                 <div class="price-summary">
-                    <p>Renta por evento: <span id="summary-days">1</span></p>
-                    <h3>Total a pagar: <span id="summary-total">$0.00 MXN</span></h3>
+                    <p>Renta por evento: <span id="summary-rent">$0.00 MXN</span></p>
+                    <p style="color: #bbb; font-size: 0.9rem; margin-bottom: 10px;">Depósito (Reembolsable): <span id="summary-deposit">$0.00 MXN</span></p>
+                    <h3 style="border-top: 1px solid #333; padding-top: 10px;">Total a pagar: <span id="summary-total">$0.00 MXN</span></h3>
                 </div>
 
                 <button type="submit" class="btn-primary btn-block">Confirmar Solicitud por WhatsApp</button>
             </form>
         </div>
     </div>
+
+    <script src="app.js"></script>
 </body>
 </html>
