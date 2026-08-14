@@ -138,9 +138,11 @@ class Catalog {
                 const payload = {
                     base64: base64Data,
                     filename: fileName,
-                    mimeType: file.type
+                    mimeType: file.type,
+                    // PON AQUÍ EL ID DE TU CARPETA DE INEs
+                    folderId: '1ttKQlN2py9UUBKcGhDsnjZULQDuDpU9S' 
                 };
-
+               
                 // URL de tu Google Apps Script
                 const scriptUrl = 'https://script.google.com/macros/s/AKfycbx6iX_qUnAipUhzQNhexvSRiXCP8kgpe8zWAYBtcwN5RkNHhZxsNnbTxGm2ocj2pl8/exec';
 
