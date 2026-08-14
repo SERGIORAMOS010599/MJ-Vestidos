@@ -103,41 +103,110 @@ initModalEvents() {
         startDateInput.addEventListener('change', calculateRental);
 
         // Envío del formulario
-        document.getElementById('booking-form').onsubmit = (e) => {
+// Envío del formulario conectando con Google Drive
+        document.getElementById('booking-form').onsubmit = async (e) => {
             e.preventDefault();
             
-            const name = document.getElementById('full-name').value;
-            const phone = document.getElementById('phone').value;
-            const address = document.getElementById('address').value;
-            const size = document.getElementById('size').value;
-            
-            // Fechas y Horarios
-            const useDateVal = startDateInput.value;
-            const deliveryDateText = document.getElementById('delivery-date-display').innerText;
-            const returnDateText = document.getElementById('return-date-display').innerText;
-            const pickupTime = document.getElementById('pickup-time').value;
-            const returnTime = document.getElementById('return-time').value;
-            const total = document.getElementById('summary-total').innerText;
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const fileInput = document.getElementById('ine-image');
+            const file = fileInput.files[0];
 
-            // Construir mensaje estructurado para WhatsApp
-            const msg = `*NUEVA SOLICITUD DE RENTA - MJ VESTIDOS*%0A%0A` +
-                `*Vestido:* ${this.selectedDress.name}%0A` +
-                `*Cliente:* ${name}%0A` +
-                `*Teléfono:* ${phone}%0A` +
-                `*Dirección:* ${address}%0A` +
-                `*Talla:* ${size}%0A%0A` +
-                `*--- LOGÍSTICA ---*%0A` +
-                `*1. Fecha de Entrega:* ${deliveryDateText}%0A` +
-                `   *Horario:* ${pickupTime}%0A` +
-                `*2. Fecha de Uso:* ${useDateVal}%0A` +
-                `*3. Fecha de Devolución:* ${returnDateText}%0A` +
-                `   *Horario:* ${returnTime}%0A%0A` +
-                `*TOTAL A PAGAR:* ${total}`;
+            if (!file) {
+                alert("Por favor, adjunta la foto de tu INE.");
+                return;
+            }
 
-            // Abrir WhatsApp
-            window.open(`https://wa.me/526623175465?text=${msg}`, '_blank');
+            // Cambiar estado del botón para que el usuario espere
+            submitBtn.innerText = "Guardando INE de forma segura...";
+            submitBtn.disabled = true;
+            submitBtn.style.backgroundColor = "#666";
+
+            try {
+                // Función interna para convertir la imagen a formato Base64
+                const getBase64 = (file) => {
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.readAsDataURL(file);
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = error => reject(error);
+                    });
+                };
+
+                // Procesar archivo y crear un nombre limpio basado en el cliente
+                const base64Data = await getBase64(file);
+                const clientName = document.getElementById('full-name').value;
+                const safeName = clientName.replace(/[^a-zA-Z0-9]/g, '_');
+                const fileName = `INE_${safeName}_${Date.now()}.${file.name.split('.').pop()}`;
+
+                // Preparar paquete de datos
+                const payload = {
+                    base64: base64Data,
+                    filename: fileName,
+                    mimeType: file.type
+                };
+
+                // URL de tu Google Apps Script
+                const scriptUrl = 'https://script.google.com/macros/s/AKfycbx6iX_qUnAipUhzQNhexvSRiXCP8kgpe8zWAYBtcwN5RkNHhZxsNnbTxGm2ocj2pl8/exec';
+
+                // Enviar a tu Google Drive
+                const response = await fetch(scriptUrl, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || "No se pudo guardar la imagen en Drive.");
+                }
+
+                // Obtener el link generado en tu Drive
+                const ineUrl = data.url;
+
+                // Recopilar el resto de los datos del formulario
+                const phone = document.getElementById('phone').value;
+                const address = document.getElementById('address').value;
+                const size = document.getElementById('size').value;
+                
+                const useDateVal = startDateInput.value;
+                const deliveryDateText = document.getElementById('delivery-date-display').innerText;
+                const returnDateText = document.getElementById('return-date-display').innerText;
+                const pickupTime = document.getElementById('pickup-time').value;
+                const returnTime = document.getElementById('return-time').value;
+                
+                const total = document.getElementById('summary-total').innerText;
+
+                // Construir mensaje para WhatsApp con el link de tu propio Drive
+                const msg = `*NUEVA SOLICITUD DE RENTA - MJ VESTIDOS*%0A%0A` +
+                    `*Vestido:* ${this.selectedDress.name}%0A` +
+                    `*Cliente:* ${clientName}%0A` +
+                    `*Teléfono:* ${phone}%0A` +
+                    `*Dirección:* ${address}%0A` +
+                    `*Talla:* ${size}%0A%0A` +
+                    `*--- LOGÍSTICA ---*%0A` +
+                    `*1. Fecha de Entrega:* ${deliveryDateText} (${pickupTime})%0A` +
+                    `*2. Fecha de Uso:* ${useDateVal}%0A` +
+                    `*3. Devolución Obligatoria:* ${returnDateText} (${returnTime})%0A%0A` +
+                    `*TOTAL A PAGAR:* ${total} (Incluye depósito)%0A%0A` +
+                    `*📎 LINK DE INE:* ${ineUrl}`;
+
+                // Abrir WhatsApp con todos los datos listos
+                window.open(`https://wa.me/526623175465?text=${msg}`, '_blank');
+
+                // Restaurar modal y botón
+                submitBtn.innerText = "Confirmar Solicitud por WhatsApp";
+                submitBtn.disabled = false;
+                submitBtn.style.backgroundColor = "";
+                modal.style.display = 'none';
+
+            } catch (error) {
+                alert("Hubo un error de conexión al subir la imagen. Intenta nuevamente.");
+                console.error(error);
+                submitBtn.innerText = "Confirmar Solicitud por WhatsApp";
+                submitBtn.disabled = false;
+                submitBtn.style.backgroundColor = "";
+            }
         };
-    }
 }
 
 // Inicialización Global
