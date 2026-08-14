@@ -153,12 +153,12 @@ document.addEventListener('DOMContentLoaded', () => {
     window.appCatalog = new Catalog('dress-container');
 
     // Modifica los precios reales aquí (reemplaza los ceros cuando gustes)
-    window.appCatalog.addDress(new Dress(1, 'Pasión Rubí', 'Vino / Tinto', 0, 'img/vestido1.png', 'Elegante vestido con corpiño de encaje floral, finas transparencias y una falda fluida.'));
-    window.appCatalog.addDress(new Dress(2, 'Brillo Dorado', 'Oro', 0, 'img/vestido2.png', 'Deslumbrante diseño de lentejuelas ceñido al cuerpo con delicados tirantes.'));
-    window.appCatalog.addDress(new Dress(3, 'Destello Celeste', 'Azul Celeste', 0, 'img/vestido3.png', 'Audaz diseño con corsé estructurado, pedrería lineal y abertura en pierna.'));
-    window.appCatalog.addDress(new Dress(4, 'Esmeralda Satín', 'Verde Esmeralda', 0, 'img/vestido4.png', 'Sofisticado vestido de satén con escote en V profundo y falda con vuelo.'));
-    window.appCatalog.addDress(new Dress(5, 'Noche Azul Real', 'Azul Marino', 0, 'img/vestido5.png', 'Vestido vaporoso con mangas largas semitransparentes y broche en cintura.'));
-    window.appCatalog.addDress(new Dress(6, 'Obsidiana Glamour', 'Negro', 0, 'img/vestido6.png', 'Imponente vestido negro de lentejuelas con corsé y flecos brillantes.'));
+    window.appCatalog.addDress(new Dress(1, 'Pasión Rubí', 'Vino / Tinto', 550, 'img/vestido1.png', 'Elegante vestido con corpiño de encaje floral, finas transparencias y una falda fluida.'));
+    window.appCatalog.addDress(new Dress(2, 'Brillo Dorado', 'Oro', 550, 'img/vestido2.png', 'Deslumbrante diseño de lentejuelas ceñido al cuerpo con delicados tirantes.'));
+    window.appCatalog.addDress(new Dress(3, 'Destello Celeste', 'Azul Celeste', 550, 'img/vestido3.png', 'Audaz diseño con corsé estructurado, pedrería lineal y abertura en pierna.'));
+    window.appCatalog.addDress(new Dress(4, 'Esmeralda Satín', 'Verde Esmeralda', 550, 'img/vestido4.png', 'Sofisticado vestido de satén con escote en V profundo y falda con vuelo.'));
+    window.appCatalog.addDress(new Dress(5, 'Noche Azul Real', 'Azul Marino', 550, 'img/vestido5.png', 'Vestido vaporoso con mangas largas semitransparentes y broche en cintura.'));
+    window.appCatalog.addDress(new Dress(6, 'Obsidiana Glamour', 'Negro', 550, 'img/vestido6.png', 'Imponente vestido negro de lentejuelas con corsé y flecos brillantes.'));
 
     window.appCatalog.render();
 });
