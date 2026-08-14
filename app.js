@@ -123,7 +123,7 @@ class Catalog {
                 return;
             }
 
-            submitBtn.innerText = "Guardando INE en Drive (Espera unos segundos)...";
+            submitBtn.innerText = "Generando informacion (Espera unos segundos)...";
             submitBtn.disabled = true;
             submitBtn.style.backgroundColor = "#666";
 
@@ -234,7 +234,7 @@ class Catalog {
             } catch (error) {
                 alert("Hubo un error de conexión al subir la imagen. Intenta nuevamente.");
                 console.error(error);
-                submitBtn.innerText = "Confirmar Solicitud y Subir INE";
+                submitBtn.innerText = "Confirmar Solicitud";
                 submitBtn.disabled = false;
                 submitBtn.style.backgroundColor = "";
             }
