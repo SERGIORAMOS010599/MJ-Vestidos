@@ -61,58 +61,46 @@ class Catalog {
         document.getElementById('booking-modal').style.display = 'block';
     }
 
-    initModalEvents() {
+initModalEvents() {
         const modal = document.getElementById('booking-modal');
         const closeBtn = document.querySelector('.close-btn');
         const startDateInput = document.getElementById('start-date');
-        const endDateInput = document.getElementById('end-date');
 
         // Cerrar modal
         closeBtn.onclick = () => modal.style.display = 'none';
         window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
 
-        // Calcular fechas y costo al cambiar seleccionadores
+        // Calcular fechas de entrega, devolución y costo al cambiar la "Fecha de Uso"
         const calculateRental = () => {
             const startVal = startDateInput.value;
-            const endVal = endDateInput.value;
 
-            if (startVal && endVal) {
-                const start = new Date(startVal);
-                const end = new Date(endVal);
+            if (startVal) {
+                // Parseamos la fecha evitando problemas de zona horaria
+                const [year, month, day] = startVal.split('-');
+                const useDate = new Date(year, month - 1, day);
 
-                // Validar que la fecha final sea posterior a la inicial
-                const diffTime = end - start;
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // Incluye el día de inicio
+                // Calcular 1 día antes (Entrega)
+                const deliveryDate = new Date(useDate);
+                deliveryDate.setDate(useDate.getDate() - 1);
 
-                if (diffDays <= 0) {
-                    alert('La fecha del último día debe ser igual o posterior a la fecha de inicio.');
-                    endDateInput.value = '';
-                    return;
-                }
-
-                // Límite de 3 días máximo de uso
-                if (diffDays > 3) {
-                    alert('El periodo máximo de renta es de 3 días.');
-                    endDateInput.value = '';
-                    return;
-                }
-
-                // Calcular fecha de devolución obligatoria (1 día después del último día de uso)
-                const returnDate = new Date(end);
-                returnDate.setDate(returnDate.getDate() + 1);
+                // Calcular 1 día después (Devolución)
+                const returnDate = new Date(useDate);
+                returnDate.setDate(useDate.getDate() + 1);
                 
                 const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                
+                // Mostrar en los recuadros bloqueados
+                document.getElementById('delivery-date-display').innerText = deliveryDate.toLocaleDateString('es-MX', options);
                 document.getElementById('return-date-display').innerText = returnDate.toLocaleDateString('es-MX', options);
 
-                // Calcular total
-                const totalCost = diffDays * this.selectedDress.price;
-                document.getElementById('summary-days').innerText = diffDays;
+                // Calcular total (Es renta por el evento)
+                const totalCost = this.selectedDress.price;
+                document.getElementById('summary-days').innerText = '1 Evento';
                 document.getElementById('summary-total').innerText = `$${totalCost.toFixed(2)} MXN`;
             }
         };
 
         startDateInput.addEventListener('change', calculateRental);
-        endDateInput.addEventListener('change', calculateRental);
 
         // Envío del formulario
         document.getElementById('booking-form').onsubmit = (e) => {
@@ -122,8 +110,10 @@ class Catalog {
             const phone = document.getElementById('phone').value;
             const address = document.getElementById('address').value;
             const size = document.getElementById('size').value;
-            const startDate = startDateInput.value;
-            const endDate = endDateInput.value;
+            
+            // Fechas y Horarios
+            const useDateVal = startDateInput.value;
+            const deliveryDateText = document.getElementById('delivery-date-display').innerText;
             const returnDateText = document.getElementById('return-date-display').innerText;
             const pickupTime = document.getElementById('pickup-time').value;
             const returnTime = document.getElementById('return-time').value;
@@ -136,13 +126,15 @@ class Catalog {
                 `*Teléfono:* ${phone}%0A` +
                 `*Dirección:* ${address}%0A` +
                 `*Talla:* ${size}%0A%0A` +
-                `*Periodo de uso:* Del ${startDate} al ${endDate}%0A` +
-                `*Horario de recolección:* ${pickupTime}%0A` +
-                `*Devolución obligatoria:* ${returnDateText}%0A` +
-                `*Horario de devolución:* ${returnTime}%0A%0A` +
-                `*TOTAL CALCULADO:* ${total}`;
+                `*--- LOGÍSTICA ---*%0A` +
+                `*1. Fecha de Entrega:* ${deliveryDateText}%0A` +
+                `   *Horario:* ${pickupTime}%0A` +
+                `*2. Fecha de Uso:* ${useDateVal}%0A` +
+                `*3. Fecha de Devolución:* ${returnDateText}%0A` +
+                `   *Horario:* ${returnTime}%0A%0A` +
+                `*TOTAL A PAGAR:* ${total}`;
 
-            // Abrir WhatsApp con la información lista para enviar a María José
+            // Abrir WhatsApp
             window.open(`https://wa.me/526623175465?text=${msg}`, '_blank');
         };
     }
