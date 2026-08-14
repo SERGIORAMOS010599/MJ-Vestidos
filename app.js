@@ -171,6 +171,25 @@ class Catalog {
                 const total = document.getElementById('summary-total').innerText;
 
                 // Construir mensaje usando saltos de línea nativos (\n)
+// --- CÓDIGO NUEVO PARA EL LINK DEL CONTRATO ---
+                // Obtenemos la URL actual de tu sitio para crear el link dinámico
+                const baseUrl = window.location.href.split('index.html')[0].replace(/\/$/, "");
+                
+                // Creamos los parámetros para enviarlos a la otra página
+                const params = new URLSearchParams({
+                    vestido: this.selectedDress.name,
+                    cliente: clientName,
+                    telefono: phone,
+                    direccion: address,
+                    uso: useDateVal,
+                    entrega: `${deliveryDateText} (${pickupTime})`,
+                    devolucion: `${returnDateText} (${returnTime})`,
+                    total: total
+                }).toString();
+
+                const contratoLink = `${baseUrl}/contrato.html?${params}`;
+
+                // Construir mensaje usando saltos de línea nativos (\n)
                 const msg = `*NUEVA SOLICITUD DE RENTA - MJ VESTIDOS*\n\n` +
                     `*Vestido:* ${this.selectedDress.name}\n` +
                     `*Cliente:* ${clientName}\n` +
@@ -182,7 +201,8 @@ class Catalog {
                     `*2. Fecha de Uso:* ${useDateVal}\n` +
                     `*3. Devolución Obligatoria:* ${returnDateText} (${returnTime})\n\n` +
                     `*TOTAL A PAGAR:* ${total} (Incluye depósito)\n\n` +
-                    `*📎 LINK DE INE:* ${ineUrl}`;
+                    `*📎 LINK DE INE:* ${ineUrl}\n` +
+                    `*📝 LINK DE CONTRATO:* ${contratoLink}`;
 
                 // Codificamos el texto para que los espacios y símbolos no rompan el enlace
                 const encodedMsg = encodeURIComponent(msg);
@@ -194,7 +214,7 @@ class Catalog {
                 submitBtn.style.backgroundColor = "";
                 modal.style.display = 'none';
 
-                // Redirigir en la misma pestaña (Evita el bloqueador de Pop-ups de los navegadores)
+                // Redirigir en la misma pestaña
                 window.location.href = whatsappUrl;
 
             } catch (error) {
