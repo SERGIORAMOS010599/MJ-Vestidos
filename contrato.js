@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnUnlock = document.getElementById('btn-unlock');
 
     // Cambia 'MJ2026' por la contraseña que quieras que use María José
-    const CLAVE_SECRETA = 'Majo2026';
+    const CLAVE_SECRETA = 'Majo-2026';
 
     btnUnlock.addEventListener('click', () => {
         if (pinInput.value === CLAVE_SECRETA) {
