@@ -37,7 +37,9 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('c-total').innerText = urlParams.get('total') || '';
     document.getElementById('c-entrega').innerText = urlParams.get('entrega') || '';
     document.getElementById('c-devolucion').innerText = urlParams.get('devolucion') || '';
-    
+    document.getElementById('c-entrega').innerText = urlParams.get('entrega') || '';
+    document.getElementById('c-devolucion').innerText = urlParams.get('devolucion') || '';
+    document.getElementById('c-pago').innerText = urlParams.get('pago') || ''; // <-- MUESTRA EL PAGO
     document.getElementById('firma-nombre').innerText = cliente;
 
     // 3. Configurar el lienzo de firma (Signature Pad)
@@ -63,6 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // 4. Generar PDF y subir a Drive
+// 4. Generar PDF y subir a Drive
     document.getElementById('save-pdf').addEventListener('click', async (e) => {
         if (signaturePad.isEmpty()) {
             alert("El cliente debe firmar el contrato antes de guardar.");
@@ -75,33 +78,47 @@ document.addEventListener("DOMContentLoaded", () => {
         btn.style.backgroundColor = "#666";
         document.getElementById('clear-signature').style.display = 'none';
 
+        // --- TRUCO PARA QUE LA FIRMA SÍ SALGA EN EL PDF ---
+        const canvasElement = document.getElementById('signature-pad');
+        const imgElement = document.getElementById('signature-img');
+        
+        // Convertimos el dibujo a una foto PNG
+        imgElement.src = signaturePad.toDataURL('image/png');
+        
+        // Ocultamos el canvas inestable y mostramos la foto fija
+        canvasElement.style.display = 'none';
+        imgElement.style.display = 'block';
+
+        // Pequeña pausa de 100ms para que el navegador cargue la imagen antes de hacer el PDF
+        await new Promise(resolve => setTimeout(resolve, 100));
+        // --------------------------------------------------
+
         // Elemento a convertir en PDF (todo el contrato)
         const element = document.getElementById('pdf-content');
+        const nombreLimpio = cliente ? cliente.replace(/[^a-zA-Z0-9]/g, '_') : 'Cliente';
 
         // Opciones del PDF
         const opt = {
             margin:       10,
-            filename:     `Contrato_${cliente.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.pdf`,
+            filename:     `Contrato_${nombreLimpio}_${Date.now()}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { scale: 2 },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
         try {
-            // 1. Iniciar la creación del PDF usando html2pdf
+            // 1. Iniciar la creación del PDF
             const pdfWorker = html2pdf().set(opt).from(element);
             
-            // 2. Obtener el PDF en formato Base64 para mandarlo a Drive
+            // 2. Obtener el PDF en formato Base64
             const base64Pdf = await pdfWorker.output('datauristring');
             
-            // 3. Preparar el envío al MISMO Script de Google
-           // 3. Preparar el envío al MISMO Script de Google
+            // 3. Preparar el envío a Google Drive
             const payload = {
                 base64: base64Pdf,
                 filename: opt.filename,
                 mimeType: 'application/pdf',
-                // PON AQUÍ EL ID DE TU NUEVA CARPETA DE CONTRATOS
-                folderId: '14MRtoYDZJ36Qd2d_fd2K206RdhKsI0KD' 
+                folderId: '14MRtoYDZJ36Qd2d_fd2K206RdhKsI0KD' // ID de la carpeta de Contratos
             };
 
             const scriptUrl = 'https://script.google.com/macros/s/AKfycbx6iX_qUnAipUhzQNhexvSRiXCP8kgpe8zWAYBtcwN5RkNHhZxsNnbTxGm2ocj2pl8/exec';
@@ -114,7 +131,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (!data.success) throw new Error("Error guardando en Drive");
 
-            // 4. Descargar el archivo localmente a la computadora/celular de María José
+            // 4. Descargar el archivo localmente
             await pdfWorker.save();
 
             btn.innerText = "¡Contrato Guardado Exitosamente!";
@@ -128,6 +145,10 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.disabled = false;
             btn.style.backgroundColor = "#111";
             document.getElementById('clear-signature').style.display = 'block';
+            
+            // Revertir el truco si hay error
+            canvasElement.style.display = 'block';
+            imgElement.style.display = 'none';
         }
     });
 });
