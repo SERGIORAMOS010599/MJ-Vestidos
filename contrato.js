@@ -91,11 +91,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const element = document.getElementById('pdf-content');
         const nombreLimpio = cliente ? cliente.replace(/[^a-zA-Z0-9]/g, '_') : 'Cliente';
 
+        // Opciones del PDF
         const opt = {
-            margin:       10,
+            margin:       [5, 10, 5, 10], // Redujimos los márgenes (Arriba, Derecha, Abajo, Izquierda)
             filename:     `Contrato_${nombreLimpio}_${Date.now()}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2 },
+            html2canvas:  { 
+                scale: 2, 
+                scrollY: 0, // ¡EL TRUCO! Ignora si hiciste scroll y quita el espacio blanco superior
+                windowWidth: document.documentElement.offsetWidth 
+            },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
