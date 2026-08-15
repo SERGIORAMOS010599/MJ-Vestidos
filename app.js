@@ -59,7 +59,7 @@ class Catalog {
         document.getElementById('return-date-display').innerText = 'Selecciona primero las fechas de renta';
         document.getElementById('delivery-date-display').innerText = 'Selecciona la fecha de uso';
 
-        // --- RESTAURAR EL FORMULARIO (Quitar botón de WhatsApp si se abrió antes) ---
+        // --- RESTAURAR EL FORMULARIO ---
         const submitBtn = document.querySelector('#booking-form button[type="submit"]');
         submitBtn.style.display = 'block';
         submitBtn.innerText = "Confirmar Solicitud";
@@ -149,7 +149,8 @@ class Catalog {
                     folderId: '1ttKQlN2py9UUBKcGhDsnjZULQDuDpU9S' // ID de la carpeta de INEs
                 };
 
-                const scriptUrl = 'https://script.google.com/macros/s/AKfycbxURQoAuyUbBNQvPFlLus-pPhXE3hkerrtibkiXy-PstzjD9dwxUnQxrz8A2fz6IS98/exec';
+                // --- AQUÍ ESTÁ TU NUEVA URL DE GOOGLE SCRIPT ---
+                const scriptUrl = 'https://script.google.com/macros/s/AKfycbwaKJxY7JErnXQUYi_OCTuKmGjyBoxlPe-RRcM_XmSkYrwRic2EK7nYSDN-W8VmmiSN/exec';
 
                 const response = await fetch(scriptUrl, {
                     method: 'POST',
@@ -162,12 +163,15 @@ class Catalog {
                     throw new Error(data.error || "No se pudo guardar la imagen en Drive.");
                 }
 
-                // (Este código va justo debajo de: const ineUrl = data.url; )
+                const ineUrl = data.url;
 
                 const phone = document.getElementById('phone').value;
                 const address = document.getElementById('address').value;
                 const size = document.getElementById('size').value;
-                const payment = document.getElementById('payment').value; // <-- CAPTURAMOS EL PAGO
+                
+                // Validación para el método de pago
+                const paymentElement = document.getElementById('payment');
+                const payment = paymentElement ? paymentElement.value : 'No especificado';
                 
                 const useDateVal = startDateInput.value;
                 const deliveryDateText = document.getElementById('delivery-date-display').innerText;
@@ -188,7 +192,7 @@ class Catalog {
                     entrega: `${deliveryDateText} (${pickupTime})`,
                     devolucion: `${returnDateText} (${returnTime})`,
                     total: total,
-                    pago: payment // <-- ENVIAMOS EL PAGO AL CONTRATO
+                    pago: payment
                 }).toString();
                 const contratoLink = `${baseUrl}/contrato.html?${params}`;
 
@@ -198,7 +202,7 @@ class Catalog {
                     `*Teléfono:* ${phone}\n` +
                     `*Dirección:* ${address}\n` +
                     `*Talla:* ${size}\n` +
-                    `*Método de Pago:* ${payment}\n\n` + // <-- SE AGREGA AL WHATSAPP
+                    `*Método de Pago:* ${payment}\n\n` +
                     `*--- LOGÍSTICA ---*\n` +
                     `*1. Fecha de Entrega:* ${deliveryDateText} (${pickupTime})\n` +
                     `*2. Fecha de Uso:* ${useDateVal}\n` +
