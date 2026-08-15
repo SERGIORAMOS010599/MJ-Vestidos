@@ -162,11 +162,12 @@ class Catalog {
                     throw new Error(data.error || "No se pudo guardar la imagen en Drive.");
                 }
 
-                const ineUrl = data.url;
+                // (Este código va justo debajo de: const ineUrl = data.url; )
 
                 const phone = document.getElementById('phone').value;
                 const address = document.getElementById('address').value;
                 const size = document.getElementById('size').value;
+                const payment = document.getElementById('payment').value; // <-- CAPTURAMOS EL PAGO
                 
                 const useDateVal = startDateInput.value;
                 const deliveryDateText = document.getElementById('delivery-date-display').innerText;
@@ -176,7 +177,7 @@ class Catalog {
                 
                 const total = document.getElementById('summary-total').innerText;
 
-                // Crear URL de Contrato (Solución limpia que ignora anclas como #catalogo)
+                // Crear URL de Contrato
                 const baseUrl = window.location.origin + window.location.pathname.replace(/index\.html$/, "").replace(/\/$/, "");
                 const params = new URLSearchParams({
                     vestido: this.selectedDress.name,
@@ -186,7 +187,8 @@ class Catalog {
                     uso: useDateVal,
                     entrega: `${deliveryDateText} (${pickupTime})`,
                     devolucion: `${returnDateText} (${returnTime})`,
-                    total: total
+                    total: total,
+                    pago: payment // <-- ENVIAMOS EL PAGO AL CONTRATO
                 }).toString();
                 const contratoLink = `${baseUrl}/contrato.html?${params}`;
 
@@ -195,7 +197,8 @@ class Catalog {
                     `*Cliente:* ${clientName}\n` +
                     `*Teléfono:* ${phone}\n` +
                     `*Dirección:* ${address}\n` +
-                    `*Talla:* ${size}\n\n` +
+                    `*Talla:* ${size}\n` +
+                    `*Método de Pago:* ${payment}\n\n` + // <-- SE AGREGA AL WHATSAPP
                     `*--- LOGÍSTICA ---*\n` +
                     `*1. Fecha de Entrega:* ${deliveryDateText} (${pickupTime})\n` +
                     `*2. Fecha de Uso:* ${useDateVal}\n` +
