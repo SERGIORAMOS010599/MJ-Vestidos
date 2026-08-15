@@ -47,6 +47,7 @@
             <div class="info-item"><strong>Total y Depósito:</strong> <span id="c-total"></span></div>
             <div class="info-item"><strong>Entrega:</strong> <span id="c-entrega"></span></div>
             <div class="info-item"><strong>Devolución:</strong> <span id="c-devolucion"></span></div>
+            <div class="info-item"><strong>Método de Pago:</strong> <span id="c-pago"></span></div> <!-- NUEVO -->
         </div>
 
         <div class="terms">
@@ -59,7 +60,13 @@
 
         <div class="signature-section">
             <p><strong>Firma de Conformidad del Cliente</strong></p>
+            
+            <!-- Canvas donde dibujan la firma -->
             <canvas id="signature-pad"></canvas>
+            
+            <!-- IMAGEN OCULTA: Se activará solo para salir en el PDF -->
+            <img id="signature-img" src="" style="display:none; width: 100%; max-width: 400px; height: 150px; margin: 0 auto; border: 1px solid #ccc; background: #fcfcfc;">
+            
             <p style="border-top: 1px solid #111; width: 300px; margin: 5px auto 0; padding-top: 5px;" id="firma-nombre"></p>
         </div>
     </div>
