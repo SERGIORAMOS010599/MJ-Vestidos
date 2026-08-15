@@ -149,7 +149,7 @@ class Catalog {
                     folderId: '1ttKQlN2py9UUBKcGhDsnjZULQDuDpU9S' // ID de la carpeta de INEs
                 };
 
-                const scriptUrl = 'https://script.google.com/macros/s/AKfycbx6iX_qUnAipUhzQNhexvSRiXCP8kgpe8zWAYBtcwN5RkNHhZxsNnbTxGm2ocj2pl8/exec';
+                const scriptUrl = 'https://script.google.com/macros/s/AKfycbxURQoAuyUbBNQvPFlLus-pPhXE3hkerrtibkiXy-PstzjD9dwxUnQxrz8A2fz6IS98/exec';
 
                 const response = await fetch(scriptUrl, {
                     method: 'POST',
