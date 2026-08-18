@@ -177,11 +177,15 @@ class Catalog {
         document.getElementById('return-date-display').innerText = 'Selecciona primero las fechas de renta';
         document.getElementById('delivery-date-display').innerText = 'Selecciona la fecha de uso';
 
+// -- 4. Restaurar el resto del formulario --
+        // ... (código de los summary-rent) ...
+
         const submitBtn = document.querySelector('#booking-form button[type="submit"]');
         submitBtn.style.display = 'block';
-        submitBtn.innerText = "Confirmar Solicitud";
+        submitBtn.innerText = "Agendar cita"; // <-- Nuevo texto
         submitBtn.disabled = false;
-        submitBtn.style.backgroundColor = "";
+        submitBtn.style.backgroundColor = "#111"; // <-- Mantiene el color negro elegante
+        submitBtn.style.color = "#d4af37"; // <-- Letras doradas
 
         const successDiv = document.getElementById('success-wa-div');
         if (successDiv) successDiv.remove();
