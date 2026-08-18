@@ -1,21 +1,25 @@
 class Dress {
-    constructor(id, name, color, price, deposit, imageUrl, description) {
+    // Ahora recibe 'size' y un arreglo de 'images'
+    constructor(id, name, color, size, price, deposit, images, description) {
         this.id = id;
         this.name = name;
         this.color = color;
+        this.size = size;
         this.price = price;
         this.deposit = deposit;
-        this.imageUrl = imageUrl;
+        this.images = images; // Array de imágenes
         this.description = description;
     }
 
     generateCardHTML() {
+        // Usa siempre la primera imagen como portada
+        const portada = this.images[0] || 'img/proximamente.png';
         return `
-            <div class="dress-card" onclick="window.appCatalog.openBookingModal(${this.id})">
-                <img src="${this.imageUrl}" alt="${this.name}" class="dress-image">
+            <div class="dress-card" onclick="window.appCatalog.openBookingModal('${this.id}')">
+                <img src="${portada}" alt="${this.name}" class="dress-image">
                 <div class="dress-info">
                     <h3>${this.name}</h3>
-                    <p><strong>Color:</strong> ${this.color}</p>
+                    <p><strong>Color:</strong> ${this.color} | <strong>Talla:</strong> ${this.size}</p>
                     <p style="font-size: 0.85rem; margin: 8px 0; color: #555;">${this.description}</p>
                     <p class="dress-price">$${this.price.toFixed(2)} MXN / noche</p>
                 </div>
@@ -30,10 +34,50 @@ class Catalog {
         this.dresses = [];
         this.selectedDress = null;
         this.initModalEvents();
+        this.loadFromGoogleSheets(); // Llama a la base de datos al iniciar
     }
 
-    addDress(dress) {
-        this.dresses.push(dress);
+    // --- NUEVO: CONEXIÓN A GOOGLE SHEETS ---
+    async loadFromGoogleSheets() {
+        this.container.innerHTML = '<p style="text-align:center; width:100%;">Cargando catálogo de MJ Vestidos...</p>';
+        
+        // El ID de tu Excel
+        const sheetId = '18gsvPp2HSMR0DKIfYfZijnwc_PyNV7ULch-UDEVupV0';
+        const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
+
+        try {
+            const response = await fetch(url);
+            const text = await response.text();
+            // Limpiar la respuesta de Google para obtener solo el JSON
+            const json = JSON.parse(text.substring(47).slice(0, -2));
+            const rows = json.table.rows;
+
+            this.dresses = []; // Limpiamos el catálogo
+
+            // Saltamos la fila 0 si son los encabezados, empezamos desde la fila de datos
+            rows.forEach((row, index) => {
+                if (row && row.c && row.c[0] && row.c[0].v !== 'ID') { 
+                    const id = row.c[0].v;
+                    const name = row.c[1] ? row.c[1].v : 'Sin nombre';
+                    const color = row.c[2] ? row.c[2].v : 'N/A';
+                    const size = row.c[3] ? row.c[3].v : 'Única';
+                    const price = row.c[4] ? parseFloat(row.c[4].v) : 0;
+                    const deposit = row.c[5] ? parseFloat(row.c[5].v) : 0;
+                    const description = row.c[6] ? row.c[6].v : '';
+                    
+                    // Procesar imágenes separadas por coma
+                    const imagesStr = row.c[7] ? row.c[7].v : 'img/proximamente.png';
+                    const images = imagesStr.split(',').map(img => img.trim());
+
+                    this.dresses.push(new Dress(id, name, color, size, price, deposit, images, description));
+                }
+            });
+
+            this.render();
+        } catch (error) {
+            console.error("Error cargando la base de datos:", error);
+            this.container.innerHTML = '<p style="text-align:center; width:100%; color:red;">No se pudo cargar el catálogo. Verifica tu conexión.</p>';
+        }
     }
 
     render() {
@@ -44,22 +88,53 @@ class Catalog {
     }
 
     openBookingModal(dressId) {
-        this.selectedDress = this.dresses.find(d => d.id === dressId);
+        // En Excel los IDs a veces bajan como texto o número, comparamos convirtiendo a string
+        this.selectedDress = this.dresses.find(d => String(d.id) === String(dressId));
         if (!this.selectedDress) return;
 
-        document.getElementById('modal-dress-img').src = this.selectedDress.imageUrl;
+        const mainImg = document.getElementById('modal-dress-img');
+        mainImg.src = this.selectedDress.images[0] || 'img/proximamente.png';
+        
         document.getElementById('modal-dress-name').innerText = this.selectedDress.name;
         document.getElementById('modal-dress-price').innerText = `$${this.selectedDress.price.toFixed(2)} MXN / noche`;
 
+        // --- LÓGICA DE LA MINI GALERÍA ---
+        const thumbnailsContainer = document.getElementById('modal-thumbnails');
+        thumbnailsContainer.innerHTML = ''; 
+
+        if (this.selectedDress.images.length > 1) {
+            this.selectedDress.images.forEach(imgUrl => {
+                const thumb = document.createElement('img');
+                thumb.src = imgUrl;
+                thumb.style.width = '60px';
+                thumb.style.height = '80px';
+                thumb.style.objectFit = 'cover';
+                thumb.style.borderRadius = '4px';
+                thumb.style.cursor = 'pointer';
+                thumb.style.border = '2px solid transparent';
+                
+                // Al hacer clic en la miniatura, cambia la foto principal
+                thumb.onclick = () => {
+                    mainImg.src = imgUrl;
+                    // Efecto visual de selección
+                    Array.from(thumbnailsContainer.children).forEach(c => c.style.border = '2px solid transparent');
+                    thumb.style.border = '2px solid #d4af37';
+                };
+                
+                thumbnailsContainer.appendChild(thumb);
+            });
+            // Marcar la primera como seleccionada
+            thumbnailsContainer.firstChild.style.border = '2px solid #d4af37';
+        }
+        // ----------------------------------
+
         document.getElementById('booking-form').reset();
-        
         document.getElementById('summary-rent').innerText = '$0.00 MXN';
         document.getElementById('summary-deposit').innerText = '$0.00 MXN';
         document.getElementById('summary-total').innerText = '$0.00 MXN';
         document.getElementById('return-date-display').innerText = 'Selecciona primero las fechas de renta';
         document.getElementById('delivery-date-display').innerText = 'Selecciona la fecha de uso';
 
-        // --- RESTAURAR EL FORMULARIO ---
         const submitBtn = document.querySelector('#booking-form button[type="submit"]');
         submitBtn.style.display = 'block';
         submitBtn.innerText = "Confirmar Solicitud";
@@ -68,7 +143,6 @@ class Catalog {
 
         const successDiv = document.getElementById('success-wa-div');
         if (successDiv) successDiv.remove();
-        // ----------------------------------------------------------------------------
 
         document.getElementById('booking-modal').style.display = 'block';
     }
@@ -146,10 +220,9 @@ class Catalog {
                     base64: base64Data,
                     filename: fileName,
                     mimeType: file.type,
-                    folderId: '1ttKQlN2py9UUBKcGhDsnjZULQDuDpU9S' // ID de la carpeta de INEs
+                    folderId: '1ttKQlN2py9UUBKcGhDsnjZULQDuDpU9S' 
                 };
 
-                // --- AQUÍ ESTÁ TU NUEVA URL DE GOOGLE SCRIPT ---
                 const scriptUrl = 'https://script.google.com/macros/s/AKfycbwaKJxY7JErnXQUYi_OCTuKmGjyBoxlPe-RRcM_XmSkYrwRic2EK7nYSDN-W8VmmiSN/exec';
 
                 const response = await fetch(scriptUrl, {
@@ -167,9 +240,6 @@ class Catalog {
 
                 const phone = document.getElementById('phone').value;
                 const address = document.getElementById('address').value;
-                const size = document.getElementById('size').value;
-                
-                // Validación para el método de pago
                 const paymentElement = document.getElementById('payment');
                 const payment = paymentElement ? paymentElement.value : 'No especificado';
                 
@@ -178,10 +248,8 @@ class Catalog {
                 const returnDateText = document.getElementById('return-date-display').innerText;
                 const pickupTime = document.getElementById('pickup-time').value;
                 const returnTime = document.getElementById('return-time').value;
-                
                 const total = document.getElementById('summary-total').innerText;
 
-                // Crear URL de Contrato
                 const baseUrl = window.location.origin + window.location.pathname.replace(/index\.html$/, "").replace(/\/$/, "");
                 const params = new URLSearchParams({
                     vestido: this.selectedDress.name,
@@ -196,12 +264,13 @@ class Catalog {
                 }).toString();
                 const contratoLink = `${baseUrl}/contrato.html?${params}`;
 
+                // Se envía la talla directamente desde this.selectedDress.size
                 const msg = `*NUEVA SOLICITUD DE RENTA - MJ VESTIDOS*\n\n` +
                     `*Vestido:* ${this.selectedDress.name}\n` +
                     `*Cliente:* ${clientName}\n` +
                     `*Teléfono:* ${phone}\n` +
                     `*Dirección:* ${address}\n` +
-                    `*Talla:* ${size}\n` +
+                    `*Talla:* ${this.selectedDress.size}\n` +
                     `*Método de Pago:* ${payment}\n\n` +
                     `*--- LOGÍSTICA ---*\n` +
                     `*1. Fecha de Entrega:* ${deliveryDateText} (${pickupTime})\n` +
@@ -214,8 +283,7 @@ class Catalog {
                 const encodedMsg = encodeURIComponent(msg);
                 const whatsappUrl = `https://wa.me/526623175465?text=${encodedMsg}`;
 
-                // --- BOTÓN INFALIBLE DE WHATSAPP ---
-                submitBtn.style.display = 'none'; // Ocultamos el botón original
+                submitBtn.style.display = 'none'; 
 
                 const formElement = document.getElementById('booking-form');
                 let successDiv = document.createElement('div');
@@ -236,7 +304,6 @@ class Catalog {
                 `;
                 
                 formElement.appendChild(successDiv);
-                // --------------------------------------
 
             } catch (error) {
                 alert("Hubo un error de conexión al subir la imagen. Intenta nuevamente.");
@@ -249,16 +316,7 @@ class Catalog {
     }
 } 
 
-// Inicialización Global
 document.addEventListener('DOMContentLoaded', () => {
+    // Al instanciar el catálogo, ahora se conecta automáticamente a Sheets
     window.appCatalog = new Catalog('dress-container');
-
-    window.appCatalog.addDress(new Dress(1, 'Pasión Rubí', 'Vino / Tinto', 550, 300, 'img/vestido1.png', 'Elegante vestido con corpiño de encaje floral, finas transparencias y una falda fluida.'));
-    window.appCatalog.addDress(new Dress(2, 'Brillo Dorado', 'Oro', 550, 300, 'img/vestido2.png', 'Deslumbrante diseño de lentejuelas ceñido al cuerpo con delicados tirantes.'));
-    window.appCatalog.addDress(new Dress(3, 'Destello Celeste', 'Azul Celeste', 550, 300, 'img/vestido3.png', 'Audaz diseño con corsé estructurado, pedrería lineal y abertura en pierna.'));
-    window.appCatalog.addDress(new Dress(4, 'Esmeralda Satín', 'Verde Esmeralda', 550, 300, 'img/vestido4.png', 'Sofisticado vestido de satén con escote en V profundo y falda con vuelo.'));
-    window.appCatalog.addDress(new Dress(5, 'Noche Azul Real', 'Azul Marino', 550, 300, 'img/vestido5.png', 'Vestido vaporoso con mangas largas semitransparentes y broche en cintura.'));
-    window.appCatalog.addDress(new Dress(6, 'Obsidiana Glamour', 'Negro', 550, 300, 'img/vestido6.png', 'Imponente vestido negro de lentejuelas con corsé y flecos brillantes.'));
-
-    window.appCatalog.render();
 });
