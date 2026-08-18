@@ -361,9 +361,10 @@ class Catalog {
             } catch (error) {
                 alert("Hubo un error de conexión al subir la imagen. Intenta nuevamente.");
                 console.error(error);
-                submitBtn.innerText = "Confirmar Solicitud";
+                submitBtn.innerText = "Agendar cita"; // <-- Nuevo texto
                 submitBtn.disabled = false;
-                submitBtn.style.backgroundColor = "";
+                submitBtn.style.backgroundColor = "#111"; // <-- Mantiene el color
+                submitBtn.style.color = "#d4af37";
             }
         };
     }
