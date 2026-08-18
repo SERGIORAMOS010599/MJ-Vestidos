@@ -54,7 +54,6 @@
         <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" class="wa-icon">
     </a>
 
-    <!-- MODAL DE RESERVA -->
 <!-- MODAL DE RESERVA -->
     <div id="booking-modal" class="modal">
         <div class="modal-content">
@@ -63,8 +62,9 @@
                 
                 <!-- Columna Izquierda (Fotos) -->
                 <div class="modal-left">
-                    <!-- Ajustamos el tamaño máximo para que nunca se desborde -->
-                    <img id="modal-dress-img" src="" alt="Vestido Seleccionado" style="width: 100%; max-height: 60vh; object-fit: contain; border-radius: 8px;">
+                    <!-- NUEVO: Marco elegante con padding, borde dorado sutil y sombra -->
+                    <img id="modal-dress-img" src="" alt="Vestido Seleccionado" style="width: 100%; max-height: 60vh; object-fit: contain; border-radius: 4px; padding: 10px; background-color: #fff; border: 1px solid #e0ce9a; box-shadow: 0 8px 20px rgba(0,0,0,0.08);">
+                    
                     <div id="modal-thumbnails" style="display: flex; gap: 10px; margin-top: 15px; overflow-x: auto; padding-bottom: 5px; justify-content: center;"></div>
                 </div>
 
@@ -75,7 +75,6 @@
                     
                     <form id="booking-form">
                         
-                        <!-- NUEVO: Contenedor Dinámico de Tallas -->
                         <div class="form-group" id="size-group">
                             <label>Selecciona tu Talla *</label>
                             <div id="dynamic-size-container" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px;"></div>
@@ -131,7 +130,8 @@
                             <h3 style="margin-top: 10px;">Total a Pagar: <span id="summary-total" style="color: #d4af37;">$0.00 MXN</span></h3>
                         </div>
 
-                        <button type="submit" class="btn" style="width: 100%; margin-top: 15px;">Confirmar Solicitud</button>
+                        <!-- NUEVO: Botón elegante "Agendar cita" -->
+                        <button type="submit" style="width: 100%; margin-top: 20px; padding: 15px; background-color: #111; color: #d4af37; border: 1px solid #d4af37; border-radius: 4px; font-size: 1.1rem; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;">Agendar cita</button>
                     </form>
                 </div>
             </div>
