@@ -44,14 +44,12 @@
         
         <div style="text-align: center; margin-top: 25px; margin-bottom: 25px;">
             <p style="margin-bottom: 15px; font-size: 0.95rem; color: #777;">Síguenos en nuestras redes sociales</p>
-            <a href="https://www.instagram.com/mjvestidos" target="_blank" style="display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 28px; background-color: #111; color: #d4af37; text-decoration: none; font-weight: bold; font-size: 1rem; border-radius: 30px; border: 1px solid #d4af37; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.2s ease;">
-                
+            <a href="https://www.instagram.com/mjvestidos" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 28px; background-color: #111; color: #d4af37; text-decoration: none; font-weight: bold; font-size: 1rem; border-radius: 30px; border: 1px solid #d4af37; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: transform 0.2s ease;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
                     <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
                     <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
                 </svg>
-                
                 @MJVESTIDOS
             </a>
         </div>
@@ -62,8 +60,16 @@
         </div>
     </footer>
 
-    <a href="https://wa.me/526623175465?text=Hola%20María%20José,%20me%20interesa%20rentar%20un%20vestido%20en%20MJ%20Vestidos." class="whatsapp-float" target="_blank" rel="noopener noreferrer">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" class="wa-icon">
+    <a href="https://wa.me/526623175465?text=Hola%20María%20José,%20me%20interesa%20rentar%20un%20vestido%20en%20MJ%20Vestidos." class="whatsapp-float" target="_blank" rel="noopener noreferrer" style="position: fixed; width: 60px; height: 60px; bottom: 20px; right: 20px; z-index: 100;">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" style="width: 100%; height: 100%;">
+    </a>
+
+    <a href="https://www.instagram.com/mjvestidos" target="_blank" rel="noopener noreferrer" style="position: fixed; width: 60px; height: 60px; bottom: 95px; right: 20px; background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); color: #FFF; border-radius: 50px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 100; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: transform 0.3s ease;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+        </svg>
     </a>
 
     <div id="booking-modal" class="modal">
@@ -73,7 +79,6 @@
                 
                 <div class="modal-left">
                     <img id="modal-dress-img" src="" alt="Vestido Seleccionado" style="width: 100%; max-height: 60vh; object-fit: contain; padding: 15px; background: #ffffff; box-shadow: 0 15px 40px rgba(0,0,0,0.15); border: 1px solid #eaeaea; outline: 1px solid #d4af37; outline-offset: -8px;">
-                    
                     <div id="modal-thumbnails" style="display: flex; gap: 10px; margin-top: 15px; overflow-x: auto; padding-bottom: 5px; justify-content: center;"></div>
                 </div>
 
@@ -82,7 +87,67 @@
                     <p id="modal-dress-price" style="font-size: 1.2rem; color: #d4af37; font-weight: bold; margin-bottom: 15px;"></p>
                     
                     <form id="booking-form">
-                        
                         <div class="form-group" id="size-group">
                             <label>Selecciona tu Talla *</label>
-                            <div id="dynamic-size-container" style="display: flex; gap: 10px; flex-wrap: wrap
+                            <div id="dynamic-size-container" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px;"></div>
+                            <input type="hidden" id="selected-size" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="full-name">Nombre Completo *</label>
+                            <input type="text" id="full-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Teléfono *</label>
+                            <input type="tel" id="phone" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="address">Dirección *</label>
+                            <input type="text" id="address" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="payment">Método de Pago *</label>
+                            <select id="payment" required>
+                                <option value="" disabled selected>Elige un método</option>
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Transferencia Bancaria">Transferencia Bancaria</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="start-date">Fecha de Uso *</label>
+                            <input type="date" id="start-date" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="pickup-time">Hora de Entrega *</label>
+                                <input type="time" id="pickup-time" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="return-time">Hora de Devolución *</label>
+                                <input type="time" id="return-time" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="ine-image">Sube foto de tu INE *</label>
+                            <input type="file" id="ine-image" accept="image/*" required>
+                        </div>
+
+                        <div class="summary-box">
+                            <p><strong>Logística:</strong></p>
+                            <p>Entrega: <span id="delivery-date-display">...</span></p>
+                            <p>Devolución: <span id="return-date-display">...</span></p>
+                            <hr style="margin: 10px 0; border: 0; border-top: 1px solid #ccc;">
+                            <p>Renta: <span id="summary-rent">$0.00 MXN</span></p>
+                            <p>Depósito (Reembolsable): <span id="summary-deposit">$0.00 MXN</span></p>
+                            <h3 style="margin-top: 10px;">Total a Pagar: <span id="summary-total" style="color: #d4af37;">$0.00 MXN</span></h3>
+                        </div>
+
+                        <button type="submit" style="width: 100%; margin-top: 20px; padding: 15px; background-color: #111; color: #d4af37; border: 1px solid #d4af37; border-radius: 4px; font-size: 1.1rem; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;">Agendar cita</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
