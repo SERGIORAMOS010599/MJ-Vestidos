@@ -1,5 +1,4 @@
 class Dress {
-    // Ahora recibe 'size' y un arreglo de 'images'
     constructor(id, name, color, size, price, deposit, images, description) {
         this.id = id;
         this.name = name;
@@ -7,19 +6,18 @@ class Dress {
         this.size = size;
         this.price = price;
         this.deposit = deposit;
-        this.images = images; // Array de imágenes
+        this.images = images; 
         this.description = description;
     }
 
     generateCardHTML() {
-        // Usa siempre la primera imagen como portada
         const portada = this.images[0] || 'img/proximamente.png';
         return `
             <div class="dress-card" onclick="window.appCatalog.openBookingModal('${this.id}')">
                 <img src="${portada}" alt="${this.name}" class="dress-image">
                 <div class="dress-info">
                     <h3>${this.name}</h3>
-                    <p><strong>Color:</strong> ${this.color} | <strong>Talla:</strong> ${this.size}</p>
+                    <p><strong>Color:</strong> ${this.color} | <strong>Tallas:</strong> ${this.size}</p>
                     <p style="font-size: 0.85rem; margin: 8px 0; color: #555;">${this.description}</p>
                     <p class="dress-price">$${this.price.toFixed(2)} MXN / noche</p>
                 </div>
@@ -34,27 +32,23 @@ class Catalog {
         this.dresses = [];
         this.selectedDress = null;
         this.initModalEvents();
-        this.loadFromGoogleSheets(); // Llama a la base de datos al iniciar
+        this.loadFromGoogleSheets(); 
     }
 
-    // --- NUEVO: CONEXIÓN A GOOGLE SHEETS ---
     async loadFromGoogleSheets() {
         this.container.innerHTML = '<p style="text-align:center; width:100%;">Cargando catálogo de MJ Vestidos...</p>';
         
-        // El ID de tu Excel
         const sheetId = '18gsvPp2HSMR0DKIfYfZijnwc_PyNV7ULch-UDEVupV0';
         const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
 
         try {
             const response = await fetch(url);
             const text = await response.text();
-            // Limpiar la respuesta de Google para obtener solo el JSON
             const json = JSON.parse(text.substring(47).slice(0, -2));
             const rows = json.table.rows;
 
-            this.dresses = []; // Limpiamos el catálogo
+            this.dresses = []; 
 
-            // Saltamos la fila 0 si son los encabezados, empezamos desde la fila de datos
             rows.forEach((row, index) => {
                 if (row && row.c && row.c[0] && row.c[0].v !== 'ID') { 
                     const id = row.c[0].v;
@@ -65,7 +59,6 @@ class Catalog {
                     const deposit = row.c[5] ? parseFloat(row.c[5].v) : 0;
                     const description = row.c[6] ? row.c[6].v : '';
                     
-                    // Procesar imágenes separadas por coma
                     const imagesStr = row.c[7] ? row.c[7].v : 'img/proximamente.png';
                     const images = imagesStr.split(',').map(img => img.trim());
 
@@ -88,17 +81,20 @@ class Catalog {
     }
 
     openBookingModal(dressId) {
-        // En Excel los IDs a veces bajan como texto o número, comparamos convirtiendo a string
         this.selectedDress = this.dresses.find(d => String(d.id) === String(dressId));
         if (!this.selectedDress) return;
 
+        // -- 1. Ajuste Dinámico de la Imagen Principal --
         const mainImg = document.getElementById('modal-dress-img');
         mainImg.src = this.selectedDress.images[0] || 'img/proximamente.png';
+        mainImg.style.width = '100%';
+        mainImg.style.maxHeight = '60vh'; // Nunca pasará del 60% del alto de la pantalla
+        mainImg.style.objectFit = 'contain'; // La foto no se estira, se contiene
         
         document.getElementById('modal-dress-name').innerText = this.selectedDress.name;
         document.getElementById('modal-dress-price').innerText = `$${this.selectedDress.price.toFixed(2)} MXN / noche`;
 
-        // --- LÓGICA DE LA MINI GALERÍA ---
+        // -- 2. Mini Galería --
         const thumbnailsContainer = document.getElementById('modal-thumbnails');
         thumbnailsContainer.innerHTML = ''; 
 
@@ -113,21 +109,67 @@ class Catalog {
                 thumb.style.cursor = 'pointer';
                 thumb.style.border = '2px solid transparent';
                 
-                // Al hacer clic en la miniatura, cambia la foto principal
                 thumb.onclick = () => {
                     mainImg.src = imgUrl;
-                    // Efecto visual de selección
                     Array.from(thumbnailsContainer.children).forEach(c => c.style.border = '2px solid transparent');
                     thumb.style.border = '2px solid #d4af37';
                 };
                 
                 thumbnailsContainer.appendChild(thumb);
             });
-            // Marcar la primera como seleccionada
             thumbnailsContainer.firstChild.style.border = '2px solid #d4af37';
         }
-        // ----------------------------------
 
+        // -- 3. Botones Elegantes de Tallas --
+        const sizeContainer = document.getElementById('dynamic-size-container');
+        const hiddenSizeInput = document.getElementById('selected-size');
+        sizeContainer.innerHTML = ''; 
+        hiddenSizeInput.value = '';
+
+        // Separar las tallas por comas y limpiarlas
+        const sizesArray = this.selectedDress.size.split(',').map(s => s.trim()).filter(s => s !== '');
+
+        if (sizesArray.length === 0) {
+            sizesArray.push('Única'); // Si viene vacío, por defecto es Única
+        }
+
+        sizesArray.forEach((sz, index) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.innerText = sz;
+            
+            // Estilos elegantes
+            btn.style.padding = '8px 18px';
+            btn.style.border = '1px solid #111';
+            btn.style.borderRadius = '20px';
+            btn.style.background = 'transparent';
+            btn.style.color = '#111';
+            btn.style.cursor = 'pointer';
+            btn.style.fontWeight = 'bold';
+            btn.style.transition = 'all 0.3s ease';
+
+            // Comportamiento al darle clic
+            btn.onclick = () => {
+                Array.from(sizeContainer.children).forEach(b => {
+                    b.style.background = 'transparent';
+                    b.style.color = '#111';
+                });
+                btn.style.background = '#111';
+                btn.style.color = '#fff';
+                hiddenSizeInput.value = sz;
+            };
+
+            // Pre-seleccionar automáticamente la primera talla
+            if (index === 0) {
+                btn.style.background = '#111';
+                btn.style.color = '#fff';
+                hiddenSizeInput.value = sz;
+            }
+
+            sizeContainer.appendChild(btn);
+        });
+
+        // -- 4. Restaurar el resto del formulario --
         document.getElementById('booking-form').reset();
         document.getElementById('summary-rent').innerText = '$0.00 MXN';
         document.getElementById('summary-deposit').innerText = '$0.00 MXN';
@@ -194,6 +236,13 @@ class Catalog {
 
             if (!file) {
                 alert("Por favor, adjunta la foto de tu INE.");
+                return;
+            }
+
+            // Validar que sí haya una talla seleccionada internamente
+            const selectedSizeValue = document.getElementById('selected-size').value;
+            if (!selectedSizeValue) {
+                alert("Por favor, asegúrate de tener una talla seleccionada.");
                 return;
             }
 
@@ -264,13 +313,13 @@ class Catalog {
                 }).toString();
                 const contratoLink = `${baseUrl}/contrato.html?${params}`;
 
-                // Se envía la talla directamente desde this.selectedDress.size
+                // Se envía la talla SELECCIONADA al WhatsApp
                 const msg = `*NUEVA SOLICITUD DE RENTA - MJ VESTIDOS*\n\n` +
                     `*Vestido:* ${this.selectedDress.name}\n` +
                     `*Cliente:* ${clientName}\n` +
                     `*Teléfono:* ${phone}\n` +
                     `*Dirección:* ${address}\n` +
-                    `*Talla:* ${this.selectedDress.size}\n` +
+                    `*Talla Elegida:* ${selectedSizeValue}\n` +
                     `*Método de Pago:* ${payment}\n\n` +
                     `*--- LOGÍSTICA ---*\n` +
                     `*1. Fecha de Entrega:* ${deliveryDateText} (${pickupTime})\n` +
@@ -317,6 +366,5 @@ class Catalog {
 } 
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Al instanciar el catálogo, ahora se conecta automáticamente a Sheets
     window.appCatalog = new Catalog('dress-container');
 });
