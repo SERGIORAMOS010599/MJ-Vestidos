@@ -32,7 +32,7 @@ class Catalog {
         this.dresses = [];
         this.selectedDress = null;
         this.currentPage = 1;
-        this.itemsPerPage = 30;
+        this.itemsPerPage = 50;
         this.initModalEvents();
         this.loadFromGoogleSheets();
     }
