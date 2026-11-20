@@ -74,76 +74,44 @@
     </a>
 
     <div id="booking-modal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 850px;">
             <span class="close-btn">&times;</span>
-            <div class="modal-grid">
+            <div class="modal-grid" style="align-items: start; gap: 30px;">
                 
+                <!-- Columna Izquierda: Galería -->
                 <div class="modal-left">
-                    <img id="modal-dress-img" src="" alt="Vestido Seleccionado" style="width: 100%; max-height: 60vh; object-fit: contain; padding: 15px; background: radial-gradient(circle at center, #2b2b2b 0%, #0a0a0a 100%); box-shadow: 0 15px 40px rgba(0,0,0,0.4); border: 1px solid #000; outline: 1px solid #d4af37; outline-offset: -8px;">
+                    <img id="modal-dress-img" src="" alt="Artículo Seleccionado" style="width: 100%; max-height: 58vh; object-fit: contain; padding: 15px; background: radial-gradient(circle at center, #2b2b2b 0%, #0a0a0a 100%); box-shadow: 0 15px 40px rgba(0,0,0,0.4); border: 1px solid #000; outline: 1px solid #d4af37; outline-offset: -8px;">
                     <div id="modal-thumbnails" style="display: flex; gap: 10px; margin-top: 15px; overflow-x: auto; padding-bottom: 5px; justify-content: center;"></div>
                 </div>
 
-                <div class="modal-right">
-                    <h2 id="modal-dress-name">Nombre del Vestido</h2>
-                    <p id="modal-dress-price" style="font-size: 1.2rem; color: #d4af37; font-weight: bold; margin-bottom: 15px;"></p>
-                    
-                    <form id="booking-form">
-                        <div class="form-group" id="size-group">
-                            <label>Selecciona tu Talla *</label>
-                            <div id="dynamic-size-container" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px;"></div>
-                            <input type="hidden" id="selected-size" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="full-name">Nombre Completo *</label>
-                            <input type="text" id="full-name" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="phone">Teléfono *</label>
-                            <input type="tel" id="phone" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="address">Dirección *</label>
-                            <input type="text" id="address" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="payment">Método de Pago *</label>
-                            <select id="payment" required>
-                                <option value="" disabled selected>Elige un método</option>
-                                <option value="Efectivo">Efectivo</option>
-                                <option value="Transferencia Bancaria">Transferencia Bancaria</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="start-date">Fecha de Uso *</label>
-                            <input type="date" id="start-date" required>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="pickup-time">Hora de Entrega *</label>
-                                <input type="time" id="pickup-time" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="return-time">Hora de Devolución *</label>
-                                <input type="time" id="return-time" required>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="ine-image">Sube foto de tu INE *</label>
-                            <input type="file" id="ine-image" accept="image/*" required>
-                        </div>
+                <!-- Columna Derecha: Detalles del Vestido -->
+                <div class="modal-right" style="display: flex; flex-direction: column; gap: 14px;">
+                    <div>
+                        <span id="modal-dress-type" style="display: inline-block; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1.5px; color: #888; font-weight: 600; margin-bottom: 4px;"></span>
+                        <h2 id="modal-dress-name" style="margin: 0; font-size: 1.7rem; color: #111;">Nombre del Vestido</h2>
+                    </div>
 
-                        <div class="summary-box">
-                            <p><strong>Logística:</strong></p>
-                            <p>Entrega: <span id="delivery-date-display">...</span></p>
-                            <p>Devolución: <span id="return-date-display">...</span></p>
-                            <hr style="margin: 10px 0; border: 0; border-top: 1px solid #ccc;">
-                            <p>Renta: <span id="summary-rent">$0.00 MXN</span></p>
-                            <p>Depósito (Reembolsable): <span id="summary-deposit">$0.00 MXN</span></p>
-                            <h3 style="margin-top: 10px;">Total a Pagar: <span id="summary-total" style="color: #d4af37;">$0.00 MXN</span></h3>
-                        </div>
+                    <div id="modal-status-badge" style="display: inline-block; align-self: flex-start; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;"></div>
 
-                        <button type="submit" style="width: 100%; margin-top: 20px; padding: 15px; background-color: #111; color: #d4af37; border: 1px solid #d4af37; border-radius: 4px; font-size: 1.1rem; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;">Agendar cita</button>
-                    </form>
+                    <div style="background: #faf8f3; border: 1px solid #ece5d5; border-radius: 6px; padding: 16px;">
+                        <p id="modal-dress-price" style="font-size: 1.35rem; color: #b89122; font-weight: 700; margin: 0 0 6px 0;"></p>
+                        <p id="modal-dress-deposit" style="font-size: 0.95rem; color: #444; margin: 0;"></p>
+                    </div>
+
+                    <div style="display: grid; gap: 10px; font-size: 0.95rem; color: #333; padding: 6px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee;">
+                        <p style="margin: 0;"><strong>Color:</strong> <span id="modal-dress-color"></span></p>
+                        <div>
+                            <strong>Talla(s) disponible(s):</strong>
+                            <div id="modal-dress-sizes" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;"></div>
+                        </div>
+                        <p id="modal-dress-comments-wrap" style="margin: 4px 0 0 0; color: #555; line-height: 1.5;">
+                            <strong>Detalles:</strong> <span id="modal-dress-comments"></span>
+                        </p>
+                    </div>
+
+                    <a id="btn-whatsapp-cita" href="#" target="_blank" rel="noopener noreferrer" style="display: block; text-align: center; text-decoration: none; width: 100%; margin-top: 8px; padding: 15px; background-color: #111; color: #d4af37; border: 1px solid #d4af37; border-radius: 4px; font-size: 1.05rem; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;">
+                        Agendar cita
+                    </a>
                 </div>
             </div>
         </div>
