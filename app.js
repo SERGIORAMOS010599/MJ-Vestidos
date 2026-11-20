@@ -3,10 +3,10 @@ class Dress {
         this.id = id;
         this.name = name;
         this.color = color;
-        this.size = size;
+        this.size = String(size);
         this.price = price;
         this.deposit = deposit;
-        this.images = images; 
+        this.images = images;
         this.description = description;
     }
 
@@ -14,7 +14,7 @@ class Dress {
         const portada = this.images[0] || 'img/proximamente.png';
         return `
             <div class="dress-card" onclick="window.appCatalog.openBookingModal('${this.id}')">
-                <img src="${portada}" alt="${this.name}" class="dress-image">
+                <img src="${portada}" alt="${this.name}" class="dress-image" loading="lazy">
                 <div class="dress-info">
                     <h3>${this.name}</h3>
                     <p><strong>Color:</strong> ${this.color} | <strong>Tallas:</strong> ${this.size}</p>
@@ -31,15 +31,17 @@ class Catalog {
         this.container = document.getElementById(containerId);
         this.dresses = [];
         this.selectedDress = null;
+        this.currentPage = 1;
+        this.itemsPerPage = 30;
         this.initModalEvents();
-        this.loadFromGoogleSheets(); 
+        this.loadFromGoogleSheets();
     }
 
     async loadFromGoogleSheets() {
         this.container.innerHTML = '<p style="text-align:center; width:100%;">Cargando catálogo de MJ Vestidos...</p>';
-        
+
         const sheetId = '18gsvPp2HSMR0DKIfYfZijnwc_PyNV7ULch-UDEVupV0';
-        const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
+        const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&t=${Date.now()}`;
 
         try {
             const response = await fetch(url);
@@ -47,25 +49,26 @@ class Catalog {
             const json = JSON.parse(text.substring(47).slice(0, -2));
             const rows = json.table.rows;
 
-            this.dresses = []; 
+            this.dresses = [];
 
-            rows.forEach((row, index) => {
-                if (row && row.c && row.c[0] && row.c[0].v !== 'ID') { 
+            rows.forEach((row) => {
+                if (row && row.c && row.c[0] && row.c[0].v !== 'ID') {
                     const id = row.c[0].v;
                     const name = row.c[1] ? row.c[1].v : 'Sin nombre';
                     const color = row.c[2] ? row.c[2].v : 'N/A';
-                    const size = row.c[3] ? row.c[3].v : 'Única';
+                    const size = row.c[3] ? String(row.c[3].v) : 'Única';
                     const price = row.c[4] ? parseFloat(row.c[4].v) : 0;
                     const deposit = row.c[5] ? parseFloat(row.c[5].v) : 0;
                     const description = row.c[6] ? row.c[6].v : '';
-                    
-                    const imagesStr = row.c[7] ? row.c[7].v : 'img/proximamente.png';
-                    const images = imagesStr.split(',').map(img => img.trim());
+
+                    const imagesStr = row.c[7] ? String(row.c[7].v) : 'img/proximamente.png';
+                    const images = imagesStr.split(',').map(img => img.trim()).filter(Boolean);
 
                     this.dresses.push(new Dress(id, name, color, size, price, deposit, images, description));
                 }
             });
 
+            this.currentPage = 1;
             this.render();
         } catch (error) {
             console.error("Error cargando la base de datos:", error);
@@ -74,10 +77,74 @@ class Catalog {
     }
 
     render() {
-        this.container.innerHTML = ''; 
-        this.dresses.forEach(dress => {
+        this.container.innerHTML = '';
+
+        const totalPages = Math.max(1, Math.ceil(this.dresses.length / this.itemsPerPage));
+        if (this.currentPage > totalPages) this.currentPage = totalPages;
+
+        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+        const endIndex = startIndex + this.itemsPerPage;
+        const pageDresses = this.dresses.slice(startIndex, endIndex);
+
+        pageDresses.forEach(dress => {
             this.container.innerHTML += dress.generateCardHTML();
         });
+
+        this.renderPagination(totalPages);
+    }
+
+    renderPagination(totalPages) {
+        const paginationContainer = document.getElementById('pagination-controls');
+        if (!paginationContainer) return;
+
+        if (this.dresses.length === 0) {
+            paginationContainer.innerHTML = '';
+            return;
+        }
+
+        const disableBack5 = this.currentPage <= 5;
+        const disablePrev  = this.currentPage <= 1;
+        const disableNext  = this.currentPage >= totalPages;
+        const disableNext5 = (this.currentPage + 5) > totalPages;
+
+        paginationContainer.innerHTML = `
+            <button class="page-btn" title="Retroceder 5 páginas"
+                ${disableBack5 ? 'disabled' : ''}
+                onclick="window.appCatalog.changePage(${this.currentPage - 5})">
+                &laquo; 5
+            </button>
+            <button class="page-btn" title="Página anterior"
+                ${disablePrev ? 'disabled' : ''}
+                onclick="window.appCatalog.changePage(${this.currentPage - 1})">
+                &lsaquo;
+            </button>
+
+            <span class="page-info">Página ${this.currentPage} de ${totalPages}</span>
+
+            <button class="page-btn" title="Página siguiente"
+                ${disableNext ? 'disabled' : ''}
+                onclick="window.appCatalog.changePage(${this.currentPage + 1})">
+                &rsaquo;
+            </button>
+            <button class="page-btn" title="Avanzar 5 páginas"
+                ${disableNext5 ? 'disabled' : ''}
+                onclick="window.appCatalog.changePage(${this.currentPage + 5})">
+                5 &raquo;
+            </button>
+        `;
+    }
+
+    changePage(newPage) {
+        const totalPages = Math.max(1, Math.ceil(this.dresses.length / this.itemsPerPage));
+        if (newPage < 1 || newPage > totalPages) return;
+
+        this.currentPage = newPage;
+        this.render();
+
+        const catalogSection = document.getElementById('catalogo');
+        if (catalogSection) {
+            catalogSection.scrollIntoView({ behavior: 'smooth' });
+        }
     }
 
     openBookingModal(dressId) {
@@ -88,15 +155,15 @@ class Catalog {
         const mainImg = document.getElementById('modal-dress-img');
         mainImg.src = this.selectedDress.images[0] || 'img/proximamente.png';
         mainImg.style.width = '100%';
-        mainImg.style.maxHeight = '60vh'; // Nunca pasará del 60% del alto de la pantalla
-        mainImg.style.objectFit = 'contain'; // La foto no se estira, se contiene
-        
+        mainImg.style.maxHeight = '60vh';
+        mainImg.style.objectFit = 'contain';
+
         document.getElementById('modal-dress-name').innerText = this.selectedDress.name;
         document.getElementById('modal-dress-price').innerText = `$${this.selectedDress.price.toFixed(2)} MXN / noche`;
 
         // -- 2. Mini Galería --
         const thumbnailsContainer = document.getElementById('modal-thumbnails');
-        thumbnailsContainer.innerHTML = ''; 
+        thumbnailsContainer.innerHTML = '';
 
         if (this.selectedDress.images.length > 1) {
             this.selectedDress.images.forEach(imgUrl => {
@@ -108,37 +175,42 @@ class Catalog {
                 thumb.style.borderRadius = '4px';
                 thumb.style.cursor = 'pointer';
                 thumb.style.border = '2px solid transparent';
-                
+
                 thumb.onclick = () => {
                     mainImg.src = imgUrl;
                     Array.from(thumbnailsContainer.children).forEach(c => c.style.border = '2px solid transparent');
                     thumb.style.border = '2px solid #d4af37';
                 };
-                
+
                 thumbnailsContainer.appendChild(thumb);
             });
             thumbnailsContainer.firstChild.style.border = '2px solid #d4af37';
         }
 
-        // -- 3. Botones Elegantes de Tallas --
+        // -- 3. Restaurar el formulario antes de pre-seleccionar talla --
+        document.getElementById('booking-form').reset();
+        document.getElementById('summary-rent').innerText = '$0.00 MXN';
+        document.getElementById('summary-deposit').innerText = '$0.00 MXN';
+        document.getElementById('summary-total').innerText = '$0.00 MXN';
+        document.getElementById('return-date-display').innerText = 'Selecciona primero las fechas de renta';
+        document.getElementById('delivery-date-display').innerText = 'Selecciona la fecha de uso';
+
+        // -- 4. Botones Elegantes de Tallas --
         const sizeContainer = document.getElementById('dynamic-size-container');
         const hiddenSizeInput = document.getElementById('selected-size');
-        sizeContainer.innerHTML = ''; 
+        sizeContainer.innerHTML = '';
         hiddenSizeInput.value = '';
 
-        // Separar las tallas por comas y limpiarlas
         const sizesArray = this.selectedDress.size.split(',').map(s => s.trim()).filter(s => s !== '');
-
         if (sizesArray.length === 0) {
-            sizesArray.push('Única'); // Si viene vacío, por defecto es Única
+            sizesArray.push('Única');
         }
 
         sizesArray.forEach((sz, index) => {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.innerText = sz;
-            
-            // Estilos elegantes
+
             btn.style.padding = '8px 18px';
             btn.style.border = '1px solid #111';
             btn.style.borderRadius = '20px';
@@ -148,7 +220,6 @@ class Catalog {
             btn.style.fontWeight = 'bold';
             btn.style.transition = 'all 0.3s ease';
 
-            // Comportamiento al darle clic
             btn.onclick = () => {
                 Array.from(sizeContainer.children).forEach(b => {
                     b.style.background = 'transparent';
@@ -159,7 +230,6 @@ class Catalog {
                 hiddenSizeInput.value = sz;
             };
 
-            // Pre-seleccionar automáticamente la primera talla
             if (index === 0) {
                 btn.style.background = '#111';
                 btn.style.color = '#fff';
@@ -169,23 +239,13 @@ class Catalog {
             sizeContainer.appendChild(btn);
         });
 
-        // -- 4. Restaurar el resto del formulario --
-        document.getElementById('booking-form').reset();
-        document.getElementById('summary-rent').innerText = '$0.00 MXN';
-        document.getElementById('summary-deposit').innerText = '$0.00 MXN';
-        document.getElementById('summary-total').innerText = '$0.00 MXN';
-        document.getElementById('return-date-display').innerText = 'Selecciona primero las fechas de renta';
-        document.getElementById('delivery-date-display').innerText = 'Selecciona la fecha de uso';
-
-// -- 4. Restaurar el resto del formulario --
-        // ... (código de los summary-rent) ...
-
+        // -- 5. Restaurar botón de envío --
         const submitBtn = document.querySelector('#booking-form button[type="submit"]');
         submitBtn.style.display = 'block';
-        submitBtn.innerText = "Agendar cita"; // <-- Nuevo texto
+        submitBtn.innerText = "Agendar cita";
         submitBtn.disabled = false;
-        submitBtn.style.backgroundColor = "#111"; // <-- Mantiene el color negro elegante
-        submitBtn.style.color = "#d4af37"; // <-- Letras doradas
+        submitBtn.style.backgroundColor = "#111";
+        submitBtn.style.color = "#d4af37";
 
         const successDiv = document.getElementById('success-wa-div');
         if (successDiv) successDiv.remove();
@@ -213,9 +273,9 @@ class Catalog {
 
                 const returnDate = new Date(useDate);
                 returnDate.setDate(useDate.getDate() + 1);
-                
+
                 const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-                
+
                 document.getElementById('delivery-date-display').innerText = deliveryDate.toLocaleDateString('es-MX', options);
                 document.getElementById('return-date-display').innerText = returnDate.toLocaleDateString('es-MX', options);
 
@@ -233,7 +293,7 @@ class Catalog {
 
         document.getElementById('booking-form').onsubmit = async (e) => {
             e.preventDefault();
-            
+
             const submitBtn = e.target.querySelector('button[type="submit"]');
             const fileInput = document.getElementById('ine-image');
             const file = fileInput.files[0];
@@ -243,7 +303,6 @@ class Catalog {
                 return;
             }
 
-            // Validar que sí haya una talla seleccionada internamente
             const selectedSizeValue = document.getElementById('selected-size').value;
             if (!selectedSizeValue) {
                 alert("Por favor, asegúrate de tener una talla seleccionada.");
@@ -273,7 +332,7 @@ class Catalog {
                     base64: base64Data,
                     filename: fileName,
                     mimeType: file.type,
-                    folderId: '1ttKQlN2py9UUBKcGhDsnjZULQDuDpU9S' 
+                    folderId: '1ttKQlN2py9UUBKcGhDsnjZULQDuDpU9S'
                 };
 
                 const scriptUrl = 'https://script.google.com/macros/s/AKfycbwaKJxY7JErnXQUYi_OCTuKmGjyBoxlPe-RRcM_XmSkYrwRic2EK7nYSDN-W8VmmiSN/exec';
@@ -282,7 +341,7 @@ class Catalog {
                     method: 'POST',
                     body: JSON.stringify(payload)
                 });
-                
+
                 const data = await response.json();
 
                 if (!data.success) {
@@ -295,7 +354,7 @@ class Catalog {
                 const address = document.getElementById('address').value;
                 const paymentElement = document.getElementById('payment');
                 const payment = paymentElement ? paymentElement.value : 'No especificado';
-                
+
                 const useDateVal = startDateInput.value;
                 const deliveryDateText = document.getElementById('delivery-date-display').innerText;
                 const returnDateText = document.getElementById('return-date-display').innerText;
@@ -317,7 +376,6 @@ class Catalog {
                 }).toString();
                 const contratoLink = `${baseUrl}/contrato.html?${params}`;
 
-                // Se envía la talla SELECCIONADA al WhatsApp
                 const msg = `*NUEVA SOLICITUD DE RENTA - MJ VESTIDOS*\n\n` +
                     `*Vestido:* ${this.selectedDress.name}\n` +
                     `*Cliente:* ${clientName}\n` +
@@ -336,7 +394,7 @@ class Catalog {
                 const encodedMsg = encodeURIComponent(msg);
                 const whatsappUrl = `https://wa.me/526623175465?text=${encodedMsg}`;
 
-                submitBtn.style.display = 'none'; 
+                submitBtn.style.display = 'none';
 
                 const formElement = document.getElementById('booking-form');
                 let successDiv = document.createElement('div');
@@ -347,7 +405,7 @@ class Catalog {
                 successDiv.style.backgroundColor = '#f0fff4';
                 successDiv.style.border = '1px solid #25d366';
                 successDiv.style.borderRadius = '8px';
-                
+
                 successDiv.innerHTML = `
                     <h3 style="color: #25d366; margin-bottom: 10px; font-size: 1.2rem;">¡Informacion Guardada! ✅</h3>
                     <p style="margin-bottom: 15px; font-size: 0.9rem; color: #333;">Todo listo. Haz clic en el botón verde para enviar tu solicitud.</p>
@@ -355,20 +413,20 @@ class Catalog {
                         📲 Enviar a WhatsApp
                     </a>
                 `;
-                
+
                 formElement.appendChild(successDiv);
 
             } catch (error) {
                 alert("Hubo un error de conexión al subir la imagen. Intenta nuevamente.");
                 console.error(error);
-                submitBtn.innerText = "Agendar cita"; // <-- Nuevo texto
+                submitBtn.innerText = "Agendar cita";
                 submitBtn.disabled = false;
-                submitBtn.style.backgroundColor = "#111"; // <-- Mantiene el color
+                submitBtn.style.backgroundColor = "#111";
                 submitBtn.style.color = "#d4af37";
             }
         };
     }
-} 
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     window.appCatalog = new Catalog('dress-container');
