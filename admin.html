@@ -59,6 +59,7 @@
                         <select id="d-status" required>
                             <option value="Disponible">Disponible</option>
                             <option value="Rentado">Rentado</option>
+                            <option value="SACAR DE INVENTARIO">SACAR DE INVENTARIO</option>
                         </select>
                     </div>
                     <div class="form-group full">
@@ -182,17 +183,34 @@
         </div>
     </div>
 
+    <!-- MINI-MODAL PARA CAMBIAR A DISPONIBLE (SELECCIÓN MÚLTIPLE DE TALLAS) -->
+    <div id="release-modal" class="admin-modal">
+        <div class="admin-modal-content release-modal-content">
+            <span class="modal-close" id="close-release-modal">&times;</span>
+            <h2 class="card-title" style="font-size: 1.3rem;">Cambiar a Disponible</h2>
+            <p id="release-dress-subtitle" style="font-size: 0.9rem; color: #555; margin-bottom: 10px;"></p>
+
+            <div id="release-options-list" class="release-options-list"></div>
+
+            <div class="btn-row" style="justify-content: flex-end;">
+                <button type="button" id="btn-cancel-release" class="btn btn-cancel" style="display:inline-block;">Cancelar</button>
+                <button type="button" id="btn-confirm-release" class="btn btn-available">Confirmar Devolución</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- CONFIGURACIÓN ---
         const CLAVE_SECRETA = 'MJ2026';
         const SHEET_ID = '18gsvPp2HSMR0DKIfYfZijnwc_PyNV7ULch-UDEVupV0';
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwaKJxY7JErnXQUYi_OCTuKmGjyBoxlPe-RRcM_XmSkYrwRic2EK7nYSDN-W8VmmiSN/exec';
-        const PHOTOS_FOLDER_ID = '1YLrFG-atDTRZdCConiuhAtsNXhax_nqN';
+        const PHOTOS_FOLDER_ID = '1YLrFG-atDTRZdCConiuhAtsNXhax_nqN'; // <--- PEGA AQUÍ EL ID DE TU CARPETA DE FOTOS
         const INE_FOLDER_ID = '1ttKQlN2py9UUBKcGhDsnjZULQDuDpU9S';
 
         let allDresses = [];
         let keptImages = [];
         let currentRentDress = null;
+        let currentReleaseDress = null;
 
         // --- BLOQUEO POR PIN ---
         const authOverlay = document.getElementById('auth-overlay');
@@ -210,11 +228,47 @@
         });
         pinInput.addEventListener('keypress', e => { if (e.key === 'Enter') btnUnlock.click(); });
 
+        // --- UTILIDADES DE FECHA Y TEXTO ---
         function normalizeText(str) {
             return String(str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         }
 
-        // --- CARGAR INVENTARIO (10 COLUMNAS) ---
+        function getCurrentMonthKey() {
+            const now = new Date();
+            return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        function getCurrentMonthName() {
+            const name = new Date().toLocaleDateString('es-MX', { month: 'long' });
+            return name.charAt(0).toUpperCase() + name.slice(1);
+        }
+
+        function formatShortDate(dateStr) {
+            if (!dateStr) return 'Sin fecha';
+            const parts = String(dateStr).split('-');
+            if (parts.length !== 3) return dateStr;
+            const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+            return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+
+        function parseSizes(sizeStr) {
+            const arr = String(sizeStr || '').split(',').map(s => s.trim()).filter(Boolean);
+            return arr.length ? arr : ['Única'];
+        }
+
+        function parseRentControl(raw) {
+            try {
+                const parsed = raw ? JSON.parse(raw) : {};
+                return {
+                    active: parsed.active || {},
+                    monthly: parsed.monthly || {}
+                };
+            } catch (e) {
+                return { active: {}, monthly: {} };
+            }
+        }
+
+        // --- CARGAR INVENTARIO (11 COLUMNAS) ---
         async function loadInventory() {
             const listEl = document.getElementById('inventory-list');
             listEl.innerHTML = '<p class="status-msg">Actualizando lista...</p>';
@@ -231,6 +285,7 @@
                     const firstCell = row && row.c && row.c[0] && row.c[0].v ? String(row.c[0].v).trim() : '';
                     if (firstCell && firstCell.toUpperCase() !== 'ID' && firstCell.toUpperCase() !== 'ID ARTICULO') {
                         const imgStr = row.c[7] && row.c[7].v ? String(row.c[7].v) : '';
+                        const rawControl = row.c[10] && row.c[10].v ? String(row.c[10].v) : '';
                         allDresses.push({
                             id: firstCell,
                             type: row.c[1] && row.c[1].v ? String(row.c[1].v) : 'Vestido',
@@ -241,7 +296,8 @@
                             color: row.c[6] && row.c[6].v ? String(row.c[6].v) : '',
                             images: imgStr ? imgStr.split(',').map(i => i.trim()).filter(Boolean) : [],
                             status: row.c[8] && row.c[8].v ? String(row.c[8].v) : 'Disponible',
-                            comments: row.c[9] && row.c[9].v ? String(row.c[9].v) : ''
+                            comments: row.c[9] && row.c[9].v ? String(row.c[9].v) : '',
+                            rentControl: parseRentControl(rawControl)
                         });
                     }
                 });
@@ -284,9 +340,12 @@
             searchInput.focus();
         });
 
+        // --- RENDERIZAR INVENTARIO CON TALLAS TACHADAS, BADGES Y RECUADRO DE RENTAS ---
         function renderInventory(list, isFiltered) {
             const listEl = document.getElementById('inventory-list');
             const countEl = document.getElementById('count-dresses');
+            const monthKey = getCurrentMonthKey();
+            const monthName = getCurrentMonthName();
 
             countEl.innerText = isFiltered ? `${list.length} de ${allDresses.length}` : allDresses.length;
 
@@ -300,26 +359,99 @@
             listEl.innerHTML = list.map(d => {
                 const thumb = d.images[0] || 'img/proximamente.png';
                 const safeName = d.name.replace(/'/g, "\\'");
-                const isRentado = d.status.toLowerCase().includes('rentado');
-                const badgeClass = isRentado ? 'status-rentado' : 'status-disponible';
+                const sizesArr = parseSizes(d.size);
+                const activeMap = d.rentControl.active || {};
+
+                const rentedSizes = sizesArr.filter(sz => Boolean(activeMap[sz]));
+                const availSizes = sizesArr.filter(sz => !activeMap[sz]);
+
+                // 1. Tallas con raya en medio si están rentadas
+                const sizeDisplayHtml = sizesArr.map(sz => {
+                    return activeMap[sz]
+                        ? `<span class="size-rented-strike" title="Talla rentada">${sz}</span>`
+                        : `<span class="size-avail-text">${sz}</span>`;
+                }).join(', ');
+
+                // 2. Labels dinámicos de Estado (Disponible / Rentado / Personalizado como SACAR DE INVENTARIO)
+                const lowerStatus = d.status.toLowerCase();
+                const isCustomStatus = rentedSizes.length === 0 && !lowerStatus.includes('disponible') && !lowerStatus.includes('rentado');
+                let badgesHtml = '';
+
+                if (isCustomStatus) {
+                    badgesHtml = `<span class="status-badge status-custom">${d.status}</span>`;
+                } else {
+                    if (availSizes.length > 0) {
+                        const availLabel = availSizes.length > 1 ? 'DISPONIBLES' : 'DISPONIBLE';
+                        badgesHtml += `<span class="status-badge status-disponible">${availLabel} ${availSizes.join(', ')}</span>`;
+                    }
+                    if (rentedSizes.length > 0) {
+                        badgesHtml += `<span class="status-badge status-rentado">RENTADO ${rentedSizes.join(', ')}</span>`;
+                    }
+                }
+
+                // 3. Recuadro inferior derecho (Entregas pendientes O Rentas del mes)
+                let infoBoxHtml = '';
+                if (rentedSizes.length > 0) {
+                    const itemsLi = rentedSizes.map(sz => {
+                        const info = activeMap[sz];
+                        const fechaTexto = formatShortDate(info.returnDate);
+                        const horaTexto = info.returnTime ? ` (${info.returnTime})` : '';
+                        return `
+                            <li>
+                                <span><strong>Talla ${sz}</strong>${info.client ? ` — ${info.client}` : ''}</span>
+                                <span>Entrega: <strong>${fechaTexto}${horaTexto}</strong></span>
+                            </li>
+                        `;
+                    }).join('');
+
+                    infoBoxHtml = `
+                        <div class="rental-info-box has-active">
+                            <div class="rental-box-title">📅 Tallas en renta y fecha de entrega</div>
+                            <ul class="rental-active-list">${itemsLi}</ul>
+                        </div>
+                    `;
+                } else {
+                    const monthData = (d.rentControl.monthly && d.rentControl.monthly[monthKey]) || {};
+                    const totalMonth = Object.values(monthData).reduce((acc, n) => acc + Number(n || 0), 0);
+
+                    const breakdownChips = sizesArr.map(sz => {
+                        const count = monthData[sz] || 0;
+                        return `<span class="monthly-chip">${sz}: ${count}</span>`;
+                    }).join('');
+
+                    infoBoxHtml = `
+                        <div class="rental-info-box">
+                            <div class="rental-box-title">
+                                <span>📊 Rentas en ${monthName}</span>
+                                <span>Total: ${totalMonth}</span>
+                            </div>
+                            <div class="monthly-stats-row">${breakdownChips}</div>
+                        </div>
+                    `;
+                }
 
                 return `
                     <div class="dress-row">
                         <img src="${thumb}" alt="${d.name}" loading="lazy">
                         <div class="dress-meta">
                             <h3>${d.name} <span class="dress-id">(ID: ${d.id})</span></h3>
-                            <p>
+                            <p style="margin-bottom: 4px;">
                                 <strong>Tipo:</strong> ${d.type} |
-                                <strong>Estado:</strong> <span class="status-badge ${badgeClass}">${d.status}</span>
+                                <strong>Estado:</strong>
+                                <span class="status-badges-wrap">${badgesHtml}</span>
                             </p>
-                            <p><strong>Color:</strong> ${d.color} | <strong>Talla:</strong> ${d.size}</p>
+                            <p><strong>Color:</strong> ${d.color} | <strong>Talla:</strong> ${sizeDisplayHtml}</p>
                             <p><strong>Renta:</strong> $${d.price} | <strong>Depósito:</strong> $${d.deposit} | <strong>Fotos:</strong> ${d.images.length}</p>
                         </div>
-                        <div class="dress-actions">
-                            <button class="btn btn-edit" onclick="startEdit('${d.id}')">✏️ Editar</button>
-                            <button class="btn btn-contract" onclick="openRentModal('${d.id}')">📝 Firmar Contrato</button>
-                            <button class="btn btn-available" onclick="markAvailable('${d.id}', '${safeName}')">✅ Cambiar a Disponible</button>
-                            <button class="btn btn-delete" onclick="deleteDress('${d.id}', '${safeName}')">🗑️ Eliminar</button>
+
+                        <div class="dress-right-col">
+                            <div class="dress-actions">
+                                <button class="btn btn-edit" onclick="startEdit('${d.id}')">✏️ Editar</button>
+                                <button class="btn btn-contract" onclick="openRentModal('${d.id}')">📝 Firmar Contrato</button>
+                                <button class="btn btn-available" onclick="handleReleaseClick('${d.id}')">✅ Cambiar a Disponible</button>
+                                <button class="btn btn-delete" onclick="deleteDress('${d.id}', '${safeName}')">🗑️ Eliminar</button>
+                            </div>
+                            ${infoBoxHtml}
                         </div>
                     </div>
                 `;
@@ -339,7 +471,16 @@
             document.getElementById('d-size').value = d.size;
             document.getElementById('d-price').value = d.price;
             document.getElementById('d-deposit').value = d.deposit;
-            document.getElementById('d-status').value = d.status.toLowerCase().includes('rentado') ? 'Rentado' : 'Disponible';
+
+            const statusSelect = document.getElementById('d-status');
+            if (d.status.toUpperCase() === 'SACAR DE INVENTARIO') {
+                statusSelect.value = 'SACAR DE INVENTARIO';
+            } else if (d.status.toLowerCase().includes('rentado')) {
+                statusSelect.value = 'Rentado';
+            } else {
+                statusSelect.value = 'Disponible';
+            }
+
             document.getElementById('d-comments').value = d.comments;
             document.getElementById('d-photos').value = '';
 
@@ -465,25 +606,99 @@
             }
         });
 
-        // --- CAMBIAR A DISPONIBLE ---
-        window.markAvailable = async function(id, name) {
-            if (!confirm(`¿Cambiar el estado de "${name}" (${id}) a Disponible?`)) return;
+        // ===========================================================
+        // --- CAMBIAR A DISPONIBLE (DIRECTO SI ES 1 / MODAL SI >1) ---
+        // ===========================================================
+        const releaseModal = document.getElementById('release-modal');
+        document.getElementById('close-release-modal').onclick = () => { releaseModal.style.display = 'none'; };
+        document.getElementById('btn-cancel-release').onclick = () => { releaseModal.style.display = 'none'; };
+        window.addEventListener('click', (e) => { if (e.target === releaseModal) releaseModal.style.display = 'none'; });
 
+        window.handleReleaseClick = async function(id) {
+            const d = allDresses.find(item => String(item.id) === String(id));
+            if (!d) return;
+
+            const sizesArr = parseSizes(d.size);
+            const activeMap = d.rentControl.active || {};
+            const rentedSizes = sizesArr.filter(sz => Boolean(activeMap[sz]));
+
+            // Si no hay ninguna talla rentada
+            if (rentedSizes.length === 0) {
+                alert(`Todas las tallas de "${d.name}" ya están disponibles.`);
+                return;
+            }
+
+            // Si SOLO 1 talla está rentada -> cambiar esa talla directamente
+            if (rentedSizes.length === 1) {
+                const onlySize = rentedSizes[0];
+                if (!confirm(`¿Marcar la talla ${onlySize} de "${d.name}" como Disponible?`)) return;
+                await executeRelease(d.id, [onlySize]);
+                return;
+            }
+
+            // Si VARIAS tallas están rentadas -> abrir mini-ventana de selección múltiple
+            currentReleaseDress = d;
+            document.getElementById('release-dress-subtitle').innerText =
+                `Selecciona las tallas de "${d.name}" (${d.id}) que deseas regresar a Disponible:`;
+
+            const optionsEl = document.getElementById('release-options-list');
+            optionsEl.innerHTML = rentedSizes.map(sz => {
+                const info = activeMap[sz];
+                return `
+                    <label class="release-option-item">
+                        <input type="checkbox" name="release-size" value="${sz}" checked>
+                        <div class="release-option-text">
+                            <strong>Talla ${sz}</strong>
+                            <small>Entrega programada: ${formatShortDate(info.returnDate)}${info.client ? ` — ${info.client}` : ''}</small>
+                        </div>
+                    </label>
+                `;
+            }).join('');
+
+            releaseModal.style.display = 'block';
+        };
+
+        document.getElementById('btn-confirm-release').addEventListener('click', async () => {
+            if (!currentReleaseDress) return;
+            const checked = Array.from(document.querySelectorAll('input[name="release-size"]:checked'))
+                .map(cb => cb.value);
+
+            if (checked.length === 0) {
+                alert('Selecciona al menos una talla para cambiar a disponible.');
+                return;
+            }
+
+            const btn = document.getElementById('btn-confirm-release');
+            btn.disabled = true;
+            btn.innerText = 'Actualizando...';
+
+            await executeRelease(currentReleaseDress.id, checked);
+
+            btn.disabled = false;
+            btn.innerText = 'Confirmar Devolución';
+            releaseModal.style.display = 'none';
+        });
+
+        async function executeRelease(id, sizesToRelease) {
             try {
                 const res = await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    body: JSON.stringify({ action: 'updateStatus', id: id, status: 'Disponible' })
+                    body: JSON.stringify({
+                        action: 'releaseSizes',
+                        id: id,
+                        sizes: sizesToRelease
+                    })
                 });
                 const data = await res.json();
                 if (!data.success) throw new Error(data.error || 'No se pudo actualizar el estado');
 
-                alert(`"${name}" ahora está marcado como Disponible.`);
+                alert(`Talla(s) ${sizesToRelease.join(', ')} marcada(s) como Disponible.`);
                 loadInventory();
             } catch (err) {
                 console.error(err);
-                alert('Error al actualizar estado: ' + err.message);
+                alert('Error al cambiar a disponible: ' + err.message);
             }
-        };
+        }
 
         // --- ELIMINAR ARTÍCULO ---
         window.deleteDress = async function(id, name) {
@@ -519,8 +734,17 @@
         window.openRentModal = function(id) {
             const d = allDresses.find(item => String(item.id) === String(id));
             if (!d) return;
-            currentRentDress = d;
 
+            const sizes = parseSizes(d.size);
+            const activeMap = d.rentControl.active || {};
+            const availableSizes = sizes.filter(sz => !activeMap[sz]);
+
+            if (availableSizes.length === 0) {
+                alert(`Todas las tallas de "${d.name}" ya se encuentran rentadas.`);
+                return;
+            }
+
+            currentRentDress = d;
             document.getElementById('rent-form').reset();
             document.getElementById('rent-form').style.display = 'block';
             document.getElementById('contract-ready-container').innerHTML = '';
@@ -528,24 +752,33 @@
             document.getElementById('rent-dress-title').innerText = `${d.name} (${d.id})`;
             document.getElementById('rent-dress-meta').innerText = `${d.type} | Color: ${d.color} | Renta: $${d.price}/noche | Depósito: $${d.deposit}`;
 
-            // Botones de selección de talla
+            // Botones de selección de talla (deshabilita las que ya estén rentadas)
             const chipsEl = document.getElementById('rent-size-chips');
             const hiddenSize = document.getElementById('rent-selected-size');
             chipsEl.innerHTML = '';
-            const sizes = d.size.split(',').map(s => s.trim()).filter(Boolean);
-            if (sizes.length === 0) sizes.push('Única');
+            hiddenSize.value = '';
 
-            sizes.forEach((sz, idx) => {
+            let firstSelected = false;
+            sizes.forEach(sz => {
+                const isAlreadyRented = Boolean(activeMap[sz]);
                 const btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = 'size-chip-btn' + (idx === 0 ? ' active' : '');
-                btn.innerText = sz;
-                btn.onclick = () => {
-                    chipsEl.querySelectorAll('.size-chip-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    hiddenSize.value = sz;
-                };
-                if (idx === 0) hiddenSize.value = sz;
+                btn.className = 'size-chip-btn';
+                btn.innerText = isAlreadyRented ? `${sz} (Rentada)` : sz;
+                btn.disabled = isAlreadyRented;
+
+                if (!isAlreadyRented) {
+                    btn.onclick = () => {
+                        chipsEl.querySelectorAll('.size-chip-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        hiddenSize.value = sz;
+                    };
+                    if (!firstSelected) {
+                        btn.classList.add('active');
+                        hiddenSize.value = sz;
+                        firstSelected = true;
+                    }
+                }
                 chipsEl.appendChild(btn);
             });
 
@@ -570,7 +803,7 @@
             const endDate = new Date(ey, em - 1, ed);
 
             let diffDays = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24));
-            if (diffDays < 1) diffDays = 1; // Mínimo 1 día/noche
+            if (diffDays < 1) diffDays = 1;
 
             const subtotal = diffDays * currentRentDress.price;
             const total = subtotal + currentRentDress.deposit;
@@ -603,16 +836,21 @@
                 return;
             }
 
+            const selectedSize = document.getElementById('rent-selected-size').value;
+            if (!selectedSize) {
+                alert('Selecciona una talla disponible.');
+                return;
+            }
+
             const btn = document.getElementById('btn-submit-rent');
             btn.disabled = true;
-            btn.innerText = 'Subiendo INE y cambiando estado a Rentado...';
+            btn.innerText = 'Subiendo INE y registrando talla rentada...';
 
             try {
                 const clientName = document.getElementById('r-client').value.trim();
                 const phone = document.getElementById('r-phone').value.trim();
                 const address = document.getElementById('r-address').value.trim();
                 const payment = document.getElementById('r-payment').value;
-                const selectedSize = document.getElementById('rent-selected-size').value;
                 const pickupTime = document.getElementById('r-pickup-time').value;
                 const returnTime = document.getElementById('r-return-time').value;
 
@@ -636,19 +874,23 @@
                 const ineData = await ineRes.json();
                 if (!ineData.success) throw new Error(ineData.error || 'Error al subir INE');
 
-                // 2. Cambiar estado del vestido a "Rentado" en Sheets
-                const statusRes = await fetch(SCRIPT_URL, {
+                // 2. Registrar talla rentada + fecha de devolución + contador mensual en Sheets
+                const rentRes = await fetch(SCRIPT_URL, {
                     method: 'POST',
                     body: JSON.stringify({
-                        action: 'updateStatus',
+                        action: 'rentSize',
                         id: currentRentDress.id,
-                        status: 'Rentado'
+                        size: selectedSize,
+                        returnDate: eVal,
+                        returnTime: returnTime,
+                        client: clientName,
+                        monthKey: getCurrentMonthKey()
                     })
                 });
-                const statusData = await statusRes.json();
-                if (!statusData.success) throw new Error(statusData.error || 'Error al cambiar estado a Rentado');
+                const rentData = await rentRes.json();
+                if (!rentData.success) throw new Error(rentData.error || 'Error al registrar renta de talla');
 
-                // 3. Armar enlace de contrato.html con todos los datos
+                // 3. Armar enlace de contrato.html
                 const dateOpts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
                 const entregaStr = `${calc.startDate.toLocaleDateString('es-MX', dateOpts)} (${pickupTime})`;
                 const devolucionStr = `${calc.endDate.toLocaleDateString('es-MX', dateOpts)} (${returnTime})`;
@@ -668,17 +910,15 @@
                 }).toString();
                 const contratoUrl = `${baseUrl}/contrato.html?${params}`;
 
-                // Mostrar confirmación y botón directo al contrato
                 document.getElementById('rent-form').style.display = 'none';
                 document.getElementById('contract-ready-container').innerHTML = `
                     <div class="contract-ready-box">
-                        <h3 style="color:#1b7a43; margin-bottom:8px;">✅ Artículo marcado como Rentado e INE guardada</h3>
+                        <h3 style="color:#1b7a43; margin-bottom:8px;">✅ Talla ${selectedSize} marcada como Rentada e INE guardada</h3>
                         <p style="font-size:0.9rem; color:#333;">Ahora abre el contrato para recabar la firma del cliente y generar el PDF en Drive.</p>
                         <a href="${contratoUrl}" target="_blank">📝 Abrir Contrato para Firmar</a>
                     </div>
                 `;
 
-                // Refrescar el inventario en segundo plano
                 loadInventory();
 
             } catch (err) {
