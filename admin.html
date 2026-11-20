@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Admin | MJ Vestidos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Montserrat', sans-serif; }
+        body { background-color: #f4f4f4; color: #222; padding-bottom: 50px; }
+
+        /* Pantalla de bloqueo */
+        #auth-overlay {
+            position: fixed; inset: 0; background: #111; z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; color: #fff; padding: 20px;
+        }
+        #auth-overlay h2 { font-family: 'Playfair Display', serif; color: #d4af37; font-size: 2rem; margin-bottom: 10px; }
+        #auth-overlay input {
+            padding: 12px; font-size: 1rem; text-align: center; border-radius: 4px;
+            border: none; outline: none; margin-bottom: 15px; width: 100%; max-width: 260px;
+        }
+
+        /* Header */
+        header {
+            background: #111; color: #d4af37; padding: 18px 25px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 2px solid #d4af37;
+        }
+        header h1 { font-family: 'Playfair Display', serif; font-size: 1.5rem; }
+        header a { color: #fff; text-decoration: none; font-size: 0.9rem; border: 1px solid #d4af37; padding: 6px 14px; border-radius: 4px; }
+
+        /* Contenedor principal */
+        .container { max-width: 1000px; margin: 25px auto; padding: 0 15px; display: grid; gap: 25px; }
+
+        .card {
+            background: #fff; padding: 25px; border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+        .card h2 { font-family: 'Playfair Display', serif; margin-bottom: 20px; color: #111; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+
+        /* Formulario */
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; }
+        .form-group { display: flex; flex-direction: column; margin-bottom: 12px; }
+        .form-group.full { grid-column: 1 / -1; }
+        label { font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; color: #444; }
+        input, textarea {
+            padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.95rem;
+        }
+        textarea { resize: vertical; min-height: 75px; }
+
+        /* Previsualización de fotos actuales */
+        .current-images { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+        .img-chip { position: relative; width: 75px; height: 95px; border-radius: 4px; overflow: hidden; border: 1px solid #ddd; }
+        .img-chip img { width: 100%; height: 100%; object-fit: cover; }
+        .img-chip button {
+            position: absolute; top: 2px; right: 2px; background: rgba(200,0,0,0.85); color: #fff;
+            border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-weight: bold; font-size: 12px;
+        }
+
+        /* Botones */
+        .btn {
+            padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer;
+            font-weight: 600; font-size: 0.95rem; transition: opacity 0.2s;
+        }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-gold { background: #111; color: #d4af37; border: 1px solid #d4af37; text-transform: uppercase; letter-spacing: 0.5px; }
+        .btn-cancel { background: #ddd; color: #333; display: none; }
+        .btn-row { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+
+        /* Lista de inventario */
+        .inventory-list { display: grid; gap: 12px; }
+        .dress-row {
+            display: flex; align-items: center; gap: 15px; padding: 12px;
+            border: 1px solid #eee; border-radius: 6px; background: #fafafa; flex-wrap: wrap;
+        }
+        .dress-row img { width: 65px; height: 85px; object-fit: cover; border-radius: 4px; background: #eee; }
+        .dress-meta { flex: 1; min-width: 180px; }
+        .dress-meta h3 { font-size: 1rem; color: #111; margin-bottom: 4px; }
+        .dress-meta p { font-size: 0.85rem; color: #555; }
+        .dress-actions { display: flex; gap: 8px; }
+        .btn-edit { background: #d4af37; color: #111; padding: 8px 14px; font-size: 0.85rem; }
+        .btn-delete { background: #c0392b; color: #fff; padding: 8px 14px; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+
+    <!-- PANTALLA DE BLOQUEO -->
+    <div id="auth-overlay">
+        <h2>MJ Vestidos</h2>
+        <p style="margin-bottom: 20px; font-size: 0.9rem; color: #ccc;">Panel de Administración</p>
+        <input type="password" id="admin-pin" placeholder="Clave de acceso">
+        <button id="btn-unlock" class="btn btn-gold" style="width: 100%; max-width: 260px;">Entrar al Panel</button>
+    </div>
+
+    <header>
+        <h1>Admin | MJ Vestidos</h1>
+        <a href="index.html">Ver Catálogo</a>
+    </header>
+
+    <div class="container">
+        <!-- FORMULARIO CREAR / EDITAR -->
+        <div class="card">
+            <h2 id="form-title">Agregar Nuevo Vestido</h2>
+            <form id="dress-form">
+                <input type="hidden" id="edit-id">
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="d-name">Nombre del Vestido *</label>
+                        <input type="text" id="d-name" placeholder="Ej. Pasión Rubí" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="d-color">Color *</label>
+                        <input type="text" id="d-color" placeholder="Ej. Rojo Vino" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="d-size">Talla(s) * <small>(separa con coma si hay varias)</small></label>
+                        <input type="text" id="d-size" placeholder="Ej. S, M o Única" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="d-price">Precio de Renta (MXN) *</label>
+                        <input type="number" id="d-price" placeholder="550" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="d-deposit">Depósito Reembolsable (MXN) *</label>
+                        <input type="number" id="d-deposit" placeholder="300" required>
+                    </div>
+                    <div class="form-group full">
+                        <label for="d-desc">Descripción</label>
+                        <textarea id="d-desc" placeholder="Detalles de la tela, corte, caída..."></textarea>
+                    </div>
+
+                    <!-- Fotos existentes (visible al editar) -->
+                    <div class="form-group full" id="existing-images-block" style="display:none;">
+                        <label>Fotos actuales (haz clic en X para quitar alguna):</label>
+                        <div class="current-images" id="current-images-container"></div>
+                    </div>
+
+                    <!-- Subir nuevas fotos -->
+                    <div class="form-group full">
+                        <label for="d-photos">Subir Foto(s) del Vestido <small>(puedes elegir varias a la vez)</small></label>
+                        <input type="file" id="d-photos" accept="image/*" multiple>
+                    </div>
+                </div>
+
+                <div class="btn-row">
+                    <button type="submit" id="btn-save" class="btn btn-gold">Guardar Vestido</button>
+                    <button type="button" id="btn-cancel" class="btn btn-cancel">Cancelar Edición</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- INVENTARIO ACTUAL -->
+        <div class="card">
+            <h2>Inventario Actual (<span id="count-dresses">0</span>)</h2>
+            <div id="inventory-list" class="inventory-list">
+                <p style="color:#666;">Cargando inventario...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURACIÓN ---
+        const CLAVE_SECRETA = 'MJ2026';
+        const SHEET_ID = '18gsvPp2HSMR0DKIfYfZijnwc_PyNV7ULch-UDEVupV0';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwaKJxY7JErnXQUYi_OCTuKmGjyBoxlPe-RRcM_XmSkYrwRic2EK7nYSDN-W8VmmiSN/exec';
+        const PHOTOS_FOLDER_ID = 'PEGA_AQUI_EL_ID_DE_TU_CARPETA_FOTOS'; // <--- CAMBIA ESTO
+
+        let allDresses = [];
+        let keptImages = []; // Fotos que se conservan al editar
+
+        // --- BLOQUEO POR PIN ---
+        const authOverlay = document.getElementById('auth-overlay');
+        const pinInput = document.getElementById('admin-pin');
+        const btnUnlock = document.getElementById('btn-unlock');
+
+        btnUnlock.addEventListener('click', () => {
+            if (pinInput.value === CLAVE_SECRETA) {
+                authOverlay.style.display = 'none';
+                loadInventory();
+            } else {
+                alert('Clave incorrecta.');
+                pinInput.value = '';
+            }
+        });
+        pinInput.addEventListener('keypress', e => { if (e.key === 'Enter') btnUnlock.click(); });
+
+        // --- CARGAR INVENTARIO DESDE GOOGLE SHEETS ---
+        async function loadInventory() {
+            const listEl = document.getElementById('inventory-list');
+            listEl.innerHTML = '<p style="color:#666;">Actualizando lista...</p>';
+
+            try {
+                // Agregamos &t= para evitar caché vieja del navegador
+                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&t=${Date.now()}`;
+                const res = await fetch(url);
+                const text = await res.text();
+                const json = JSON.parse(text.substring(47).slice(0, -2));
+                const rows = json.table.rows;
+
+                allDresses = [];
+                rows.forEach(row => {
+                    if (row && row.c && row.c[0] && row.c[0].v !== 'ID') {
+                        const imgStr = row.c[7] ? String(row.c[7].v) : '';
+                        allDresses.push({
+                            id: row.c[0].v,
+                            name: row.c[1] ? row.c[1].v : '',
+                            color: row.c[2] ? row.c[2].v : '',
+                            size: row.c[3] ? String(row.c[3].v) : '',
+                            price: row.c[4] ? Number(row.c[4].v) : 0,
+                            deposit: row.c[5] ? Number(row.c[5].v) : 0,
+                            description: row.c[6] ? row.c[6].v : '',
+                            images: imgStr ? imgStr.split(',').map(i => i.trim()).filter(Boolean) : []
+                        });
+                    }
+                });
+
+                renderInventory();
+            } catch (err) {
+                console.error(err);
+                listEl.innerHTML = '<p style="color:red;">Error al cargar el inventario.</p>';
+            }
+        }
+
+        function renderInventory() {
+            const listEl = document.getElementById('inventory-list');
+            document.getElementById('count-dresses').innerText = allDresses.length;
+
+            if (allDresses.length === 0) {
+                listEl.innerHTML = '<p style="color:#666;">No hay vestidos registrados aún.</p>';
+                return;
+            }
+
+            listEl.innerHTML = allDresses.map(d => {
+                const thumb = d.images[0] || 'img/proximamente.png';
+                return `
+                    <div class="dress-row">
+                        <img src="${thumb}" alt="${d.name}">
+                        <div class="dress-meta">
+                            <h3>${d.name} <small style="color:#888;">(ID: ${d.id})</small></h3>
+                            <p><strong>Color:</strong> ${d.color} | <strong>Talla:</strong> ${d.size}</p>
+                            <p><strong>Renta:</strong> $${d.price} | <strong>Depósito:</strong> $${d.deposit} | <strong>Fotos:</strong> ${d.images.length}</p>
+                        </div>
+                        <div class="dress-actions">
+                            <button class="btn btn-edit" onclick="startEdit('${d.id}')">✏️ Editar</button>
+                            <button class="btn btn-delete" onclick="deleteDress('${d.id}', '${d.name.replace(/'/g, "\\'")}')">🗑️ Eliminar</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // --- MODO EDICIÓN ---
+        window.startEdit = function(id) {
+            const dress = allDresses.find(d => String(d.id) === String(id));
+            if (!dress) return;
+
+            document.getElementById('form-title').innerText = `Editando: ${dress.name}`;
+            document.getElementById('edit-id').value = dress.id;
+            document.getElementById('d-name').value = dress.name;
+            document.getElementById('d-color').value = dress.color;
+            document.getElementById('d-size').value = dress.size;
+            document.getElementById('d-price').value = dress.price;
+            document.getElementById('d-deposit').value = dress.deposit;
+            document.getElementById('d-desc').value = dress.description;
+            document.getElementById('d-photos').value = '';
+
+            keptImages = [...dress.images];
+            renderKeptImages();
+
+            document.getElementById('btn-save').innerText = 'Actualizar Vestido';
+            document.getElementById('btn-cancel').style.display = 'inline-block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        function renderKeptImages() {
+            const block = document.getElementById('existing-images-block');
+            const container = document.getElementById('current-images-container');
+            if (keptImages.length === 0) {
+                block.style.display = 'none';
+                container.innerHTML = '';
+                return;
+            }
+            block.style.display = 'block';
+            container.innerHTML = keptImages.map((url, idx) => `
+                <div class="img-chip">
+                    <img src="${url}">
+                    <button type="button" onclick="removeKeptImage(${idx})">×</button>
+                </div>
+            `).join('');
+        }
+
+        window.removeKeptImage = function(idx) {
+            keptImages.splice(idx, 1);
+            renderKeptImages();
+        };
+
+        function resetForm() {
+            document.getElementById('dress-form').reset();
+            document.getElementById('edit-id').value = '';
+            document.getElementById('form-title').innerText = 'Agregar Nuevo Vestido';
+            document.getElementById('btn-save').innerText = 'Guardar Vestido';
+            document.getElementById('btn-cancel').style.display = 'none';
+            keptImages = [];
+            renderKeptImages();
+        }
+        document.getElementById('btn-cancel').addEventListener('click', resetForm);
+
+        // --- CONVERTIR ARCHIVO A BASE64 ---
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = err => reject(err);
+            });
+        }
+
+        // --- GUARDAR O ACTUALIZAR ---
+        document.getElementById('dress-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const editId = document.getElementById('edit-id').value;
+            const name = document.getElementById('d-name').value.trim();
+            const color = document.getElementById('d-color').value.trim();
+            const size = document.getElementById('d-size').value.trim();
+            const price = document.getElementById('d-price').value;
+            const deposit = document.getElementById('d-deposit').value;
+            const description = document.getElementById('d-desc').value.trim();
+            const files = document.getElementById('d-photos').files;
+
+            const btnSave = document.getElementById('btn-save');
+            btnSave.disabled = true;
+
+            try {
+                // 1. Subir fotos nuevas una por una a Google Drive
+                const uploadedUrls = [];
+                const safeName = name.replace(/[^a-zA-Z0-9]/g, '_');
+
+                for (let i = 0; i < files.length; i++) {
+                    btnSave.innerText = `Subiendo foto ${i + 1} de ${files.length}...`;
+                    const base64 = await fileToBase64(files[i]);
+                    const ext = files[i].name.split('.').pop();
+
+                    const uploadRes = await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            action: 'uploadFile',
+                            base64: base64,
+                            filename: `Vestido_${safeName}_${Date.now()}_${i}.${ext}`,
+                            mimeType: files[i].type,
+                            folderId: PHOTOS_FOLDER_ID
+                        })
+                    });
+                    const uploadData = await uploadRes.json();
+                    if (!uploadData.success) throw new Error(uploadData.error || 'Error subiendo foto');
+                    uploadedUrls.push(uploadData.directUrl);
+                }
+
+                // Combinar fotos conservadas + fotos nuevas
+                const finalImages = [...keptImages, ...uploadedUrls].join(', ');
+
+                // 2. Guardar o actualizar fila en Google Sheets
+                btnSave.innerText = editId ? 'Actualizando base de datos...' : 'Guardando en catálogo...';
+
+                const payload = {
+                    action: editId ? 'editDress' : 'addDress',
+                    id: editId,
+                    name, color, size, price, deposit, description,
+                    images: finalImages
+                };
+
+                const res = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (!data.success) throw new Error(data.error || 'Error al guardar en Sheets');
+
+                alert(editId ? '¡Vestido actualizado correctamente!' : '¡Vestido agregado al catálogo!');
+                resetForm();
+                loadInventory();
+
+            } catch (err) {
+                console.error(err);
+                alert('Ocurrió un error: ' + err.message);
+            } finally {
+                btnSave.disabled = false;
+                btnSave.innerText = document.getElementById('edit-id').value ? 'Actualizar Vestido' : 'Guardar Vestido';
+            }
+        });
+
+        // --- ELIMINAR VESTIDO ---
+        window.deleteDress = async function(id, name) {
+            if (!confirm(`¿Seguro que deseas eliminar "${name}" del catálogo? Esta acción no se puede deshacer.`)) return;
+
+            try {
+                const res = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'deleteDress', id: id })
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || 'No se pudo eliminar');
+
+                alert('Vestido eliminado.');
+                loadInventory();
+            } catch (err) {
+                console.error(err);
+                alert('Error al eliminar: ' + err.message);
+            }
+        };
+    </script>
+</body>
+</html>
