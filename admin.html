@@ -25,51 +25,60 @@
     <div class="container">
         <!-- FORMULARIO CREAR / EDITAR -->
         <div class="card">
-            <h2 id="form-title" class="card-title">Agregar Nuevo Vestido</h2>
+            <h2 id="form-title" class="card-title">Agregar Nuevo Artículo</h2>
             <form id="dress-form">
                 <input type="hidden" id="edit-id">
 
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="d-name">Nombre del Vestido *</label>
-                        <input type="text" id="d-name" placeholder="Ej. Pasión Rubí" required>
+                        <label for="d-type">Tipo de Artículo *</label>
+                        <input type="text" id="d-type" placeholder="Ej. Vestido, Accesorio, Bolsa" value="Vestido" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="d-name">Nombre del Artículo *</label>
+                        <input type="text" id="d-name" placeholder="Ej. Rojo Mangas" required>
                     </div>
                     <div class="form-group">
                         <label for="d-color">Color *</label>
-                        <input type="text" id="d-color" placeholder="Ej. Rojo Vino" required>
+                        <input type="text" id="d-color" placeholder="Ej. Rojo" required>
                     </div>
                     <div class="form-group">
                         <label for="d-size">Talla(s) * <small>(separa con coma si hay varias)</small></label>
-                        <input type="text" id="d-size" placeholder="Ej. S, M o Única" required>
+                        <input type="text" id="d-size" placeholder="Ej. XS, S o M" required>
                     </div>
                     <div class="form-group">
-                        <label for="d-price">Precio de Renta (MXN) *</label>
-                        <input type="number" id="d-price" placeholder="550" required>
+                        <label for="d-price">Precio de Renta / noche (MXN) *</label>
+                        <input type="number" id="d-price" placeholder="450" required>
                     </div>
                     <div class="form-group">
                         <label for="d-deposit">Depósito Reembolsable (MXN) *</label>
-                        <input type="number" id="d-deposit" placeholder="300" required>
+                        <input type="number" id="d-deposit" placeholder="200" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="d-status">Estado del Producto *</label>
+                        <select id="d-status" required>
+                            <option value="Disponible">Disponible</option>
+                            <option value="Rentado">Rentado</option>
+                        </select>
                     </div>
                     <div class="form-group full">
-                        <label for="d-desc">Descripción</label>
-                        <textarea id="d-desc" placeholder="Detalles de la tela, corte, caída..."></textarea>
+                        <label for="d-comments">Extra / Comentarios</label>
+                        <textarea id="d-comments" placeholder="Detalles de la tela, corte, notas adicionales..."></textarea>
                     </div>
 
-                    <!-- Fotos existentes (visible al editar) -->
                     <div class="form-group full hidden-block" id="existing-images-block">
                         <label>Fotos actuales (haz clic en X para quitar alguna):</label>
                         <div class="current-images" id="current-images-container"></div>
                     </div>
 
-                    <!-- Subir nuevas fotos -->
                     <div class="form-group full">
-                        <label for="d-photos">Subir Foto(s) del Vestido <small>(puedes elegir varias a la vez)</small></label>
+                        <label for="d-photos">Subir Foto(s) del Artículo <small>(puedes elegir varias a la vez)</small></label>
                         <input type="file" id="d-photos" accept="image/*" multiple>
                     </div>
                 </div>
 
                 <div class="btn-row">
-                    <button type="submit" id="btn-save" class="btn btn-gold">Guardar Vestido</button>
+                    <button type="submit" id="btn-save" class="btn btn-gold">Guardar Artículo</button>
                     <button type="button" id="btn-cancel" class="btn btn-cancel">Cancelar Edición</button>
                 </div>
             </form>
@@ -85,7 +94,7 @@
                         <circle cx="11" cy="11" r="8"></circle>
                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
-                    <input type="text" id="search-input" class="search-input" placeholder="Buscar nombre, color, talla, precio, ID...">
+                    <input type="text" id="search-input" class="search-input" placeholder="Buscar nombre, tipo, color, talla, estado, ID...">
                     <button type="button" id="clear-search" class="clear-search-btn" title="Limpiar búsqueda">&times;</button>
                 </div>
             </div>
@@ -96,15 +105,94 @@
         </div>
     </div>
 
+    <!-- MODAL PARA RESERVAR Y FIRMAR CONTRATO -->
+    <div id="rent-modal" class="admin-modal">
+        <div class="admin-modal-content">
+            <span class="modal-close" id="close-rent-modal">&times;</span>
+            <h2 class="card-title">Registrar Renta y Firmar Contrato</h2>
+
+            <div class="rent-dress-banner">
+                <h3 id="rent-dress-title">Nombre del Vestido</h3>
+                <p id="rent-dress-meta">Tipo | Precio | Depósito</p>
+            </div>
+
+            <form id="rent-form">
+                <div class="form-group">
+                    <label>Selecciona la Talla a Rentar *</label>
+                    <div id="rent-size-chips" class="size-chips"></div>
+                    <input type="hidden" id="rent-selected-size" required>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="r-client">Nombre Completo del Cliente *</label>
+                        <input type="text" id="r-client" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="r-phone">Teléfono *</label>
+                        <input type="tel" id="r-phone" required>
+                    </div>
+                    <div class="form-group full">
+                        <label for="r-address">Dirección *</label>
+                        <input type="text" id="r-address" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="r-payment">Método de Pago *</label>
+                        <select id="r-payment" required>
+                            <option value="" disabled selected>Elige un método</option>
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Transferencia Bancaria">Transferencia Bancaria</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="r-ine">Foto del INE *</label>
+                        <input type="file" id="r-ine" accept="image/*" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="r-start-date">Fecha de Inicio (Entrega) *</label>
+                        <input type="date" id="r-start-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="r-end-date">Fecha de Fin (Devolución) *</label>
+                        <input type="date" id="r-end-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="r-pickup-time">Hora de Entrega *</label>
+                        <input type="time" id="r-pickup-time" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="r-return-time">Hora de Devolución *</label>
+                        <input type="time" id="r-return-time" required>
+                    </div>
+                </div>
+
+                <div class="rent-summary-box">
+                    <p><strong>Días de renta:</strong> <span id="r-days">0</span></p>
+                    <p><strong>Subtotal renta:</strong> <span id="r-subtotal">$0.00 MXN</span></p>
+                    <p><strong>Depósito (reembolsable):</strong> <span id="r-deposit">$0.00 MXN</span></p>
+                    <p class="total-line">Total a Pagar: <span id="r-total">$0.00 MXN</span></p>
+                </div>
+
+                <button type="submit" id="btn-submit-rent" class="btn btn-gold" style="width: 100%;">
+                    Guardar Renta, Marcar Rentado e Ir a Firmar
+                </button>
+            </form>
+
+            <div id="contract-ready-container"></div>
+        </div>
+    </div>
+
     <script>
         // --- CONFIGURACIÓN ---
         const CLAVE_SECRETA = 'MJ2026';
         const SHEET_ID = '18gsvPp2HSMR0DKIfYfZijnwc_PyNV7ULch-UDEVupV0';
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwaKJxY7JErnXQUYi_OCTuKmGjyBoxlPe-RRcM_XmSkYrwRic2EK7nYSDN-W8VmmiSN/exec';
-        const PHOTOS_FOLDER_ID = '1YLrFG-atDTRZdCConiuhAtsNXhax_nqN'; // <--- RECUERDA PEGAR TU ID AQUÍ
+        const PHOTOS_FOLDER_ID = '1YLrFG-atDTRZdCConiuhAtsNXhax_nqN';
+        const INE_FOLDER_ID = '1ttKQlN2py9UUBKcGhDsnjZULQDuDpU9S';
 
         let allDresses = [];
         let keptImages = [];
+        let currentRentDress = null;
 
         // --- BLOQUEO POR PIN ---
         const authOverlay = document.getElementById('auth-overlay');
@@ -122,15 +210,11 @@
         });
         pinInput.addEventListener('keypress', e => { if (e.key === 'Enter') btnUnlock.click(); });
 
-        // --- NORMALIZAR TEXTO (sin acentos ni mayúsculas) ---
         function normalizeText(str) {
-            return String(str || '')
-                .toLowerCase()
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '');
+            return String(str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         }
 
-        // --- CARGAR INVENTARIO DESDE GOOGLE SHEETS ---
+        // --- CARGAR INVENTARIO (10 COLUMNAS) ---
         async function loadInventory() {
             const listEl = document.getElementById('inventory-list');
             listEl.innerHTML = '<p class="status-msg">Actualizando lista...</p>';
@@ -144,17 +228,20 @@
 
                 allDresses = [];
                 rows.forEach(row => {
-                    if (row && row.c && row.c[0] && row.c[0].v !== 'ID') {
-                        const imgStr = row.c[7] ? String(row.c[7].v) : '';
+                    const firstCell = row && row.c && row.c[0] && row.c[0].v ? String(row.c[0].v).trim() : '';
+                    if (firstCell && firstCell.toUpperCase() !== 'ID' && firstCell.toUpperCase() !== 'ID ARTICULO') {
+                        const imgStr = row.c[7] && row.c[7].v ? String(row.c[7].v) : '';
                         allDresses.push({
-                            id: String(row.c[0].v),
-                            name: row.c[1] ? String(row.c[1].v) : '',
-                            color: row.c[2] ? String(row.c[2].v) : '',
-                            size: row.c[3] ? String(row.c[3].v) : '',
-                            price: row.c[4] ? Number(row.c[4].v) : 0,
-                            deposit: row.c[5] ? Number(row.c[5].v) : 0,
-                            description: row.c[6] ? String(row.c[6].v) : '',
-                            images: imgStr ? imgStr.split(',').map(i => i.trim()).filter(Boolean) : []
+                            id: firstCell,
+                            type: row.c[1] && row.c[1].v ? String(row.c[1].v) : 'Vestido',
+                            name: row.c[2] && row.c[2].v ? String(row.c[2].v) : 'Sin nombre',
+                            size: row.c[3] && row.c[3].v ? String(row.c[3].v) : 'Única',
+                            price: row.c[4] && row.c[4].v ? Number(row.c[4].v) : 0,
+                            deposit: row.c[5] && row.c[5].v ? Number(row.c[5].v) : 0,
+                            color: row.c[6] && row.c[6].v ? String(row.c[6].v) : '',
+                            images: imgStr ? imgStr.split(',').map(i => i.trim()).filter(Boolean) : [],
+                            status: row.c[8] && row.c[8].v ? String(row.c[8].v) : 'Disponible',
+                            comments: row.c[9] && row.c[9].v ? String(row.c[9].v) : ''
                         });
                     }
                 });
@@ -166,7 +253,7 @@
             }
         }
 
-        // --- FILTRAR Y RENDERIZAR ---
+        // --- BUSCADOR ---
         const searchInput = document.getElementById('search-input');
         const clearSearchBtn = document.getElementById('clear-search');
 
@@ -180,10 +267,9 @@
             }
 
             const terms = normalizeText(rawQuery).split(/\s+/).filter(Boolean);
-
             const filtered = allDresses.filter(d => {
                 const searchable = normalizeText(
-                    `${d.id} ${d.name} ${d.color} ${d.size} ${d.price} $${d.price} ${d.deposit} ${d.description}`
+                    `${d.id} ${d.type} ${d.name} ${d.color} ${d.size} ${d.price} $${d.price} ${d.deposit} ${d.status} ${d.comments}`
                 );
                 return terms.every(term => searchable.includes(term));
             });
@@ -192,7 +278,6 @@
         }
 
         searchInput.addEventListener('input', applySearchFilter);
-
         clearSearchBtn.addEventListener('click', () => {
             searchInput.value = '';
             applySearchFilter();
@@ -203,30 +288,37 @@
             const listEl = document.getElementById('inventory-list');
             const countEl = document.getElementById('count-dresses');
 
-            countEl.innerText = isFiltered
-                ? `${list.length} de ${allDresses.length}`
-                : allDresses.length;
+            countEl.innerText = isFiltered ? `${list.length} de ${allDresses.length}` : allDresses.length;
 
             if (list.length === 0) {
                 listEl.innerHTML = isFiltered
-                    ? '<p class="status-msg">No se encontraron vestidos que coincidan con tu búsqueda.</p>'
-                    : '<p class="status-msg">No hay vestidos registrados aún.</p>';
+                    ? '<p class="status-msg">No se encontraron artículos que coincidan con tu búsqueda.</p>'
+                    : '<p class="status-msg">No hay artículos registrados aún.</p>';
                 return;
             }
 
             listEl.innerHTML = list.map(d => {
                 const thumb = d.images[0] || 'img/proximamente.png';
                 const safeName = d.name.replace(/'/g, "\\'");
+                const isRentado = d.status.toLowerCase().includes('rentado');
+                const badgeClass = isRentado ? 'status-rentado' : 'status-disponible';
+
                 return `
                     <div class="dress-row">
                         <img src="${thumb}" alt="${d.name}" loading="lazy">
                         <div class="dress-meta">
                             <h3>${d.name} <span class="dress-id">(ID: ${d.id})</span></h3>
+                            <p>
+                                <strong>Tipo:</strong> ${d.type} |
+                                <strong>Estado:</strong> <span class="status-badge ${badgeClass}">${d.status}</span>
+                            </p>
                             <p><strong>Color:</strong> ${d.color} | <strong>Talla:</strong> ${d.size}</p>
                             <p><strong>Renta:</strong> $${d.price} | <strong>Depósito:</strong> $${d.deposit} | <strong>Fotos:</strong> ${d.images.length}</p>
                         </div>
                         <div class="dress-actions">
                             <button class="btn btn-edit" onclick="startEdit('${d.id}')">✏️ Editar</button>
+                            <button class="btn btn-contract" onclick="openRentModal('${d.id}')">📝 Firmar Contrato</button>
+                            <button class="btn btn-available" onclick="markAvailable('${d.id}', '${safeName}')">✅ Cambiar a Disponible</button>
                             <button class="btn btn-delete" onclick="deleteDress('${d.id}', '${safeName}')">🗑️ Eliminar</button>
                         </div>
                     </div>
@@ -234,25 +326,27 @@
             }).join('');
         }
 
-        // --- MODO EDICIÓN ---
+        // --- CREAR / EDITAR ARTÍCULO ---
         window.startEdit = function(id) {
-            const dress = allDresses.find(d => String(d.id) === String(id));
-            if (!dress) return;
+            const d = allDresses.find(item => String(item.id) === String(id));
+            if (!d) return;
 
-            document.getElementById('form-title').innerText = `Editando: ${dress.name} (${dress.id})`;
-            document.getElementById('edit-id').value = dress.id;
-            document.getElementById('d-name').value = dress.name;
-            document.getElementById('d-color').value = dress.color;
-            document.getElementById('d-size').value = dress.size;
-            document.getElementById('d-price').value = dress.price;
-            document.getElementById('d-deposit').value = dress.deposit;
-            document.getElementById('d-desc').value = dress.description;
+            document.getElementById('form-title').innerText = `Editando: ${d.name} (${d.id})`;
+            document.getElementById('edit-id').value = d.id;
+            document.getElementById('d-type').value = d.type;
+            document.getElementById('d-name').value = d.name;
+            document.getElementById('d-color').value = d.color;
+            document.getElementById('d-size').value = d.size;
+            document.getElementById('d-price').value = d.price;
+            document.getElementById('d-deposit').value = d.deposit;
+            document.getElementById('d-status').value = d.status.toLowerCase().includes('rentado') ? 'Rentado' : 'Disponible';
+            document.getElementById('d-comments').value = d.comments;
             document.getElementById('d-photos').value = '';
 
-            keptImages = [...dress.images];
+            keptImages = [...d.images];
             renderKeptImages();
 
-            document.getElementById('btn-save').innerText = 'Actualizar Vestido';
+            document.getElementById('btn-save').innerText = 'Actualizar Artículo';
             document.getElementById('btn-cancel').style.display = 'inline-block';
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
@@ -282,15 +376,16 @@
         function resetForm() {
             document.getElementById('dress-form').reset();
             document.getElementById('edit-id').value = '';
-            document.getElementById('form-title').innerText = 'Agregar Nuevo Vestido';
-            document.getElementById('btn-save').innerText = 'Guardar Vestido';
+            document.getElementById('d-type').value = 'Vestido';
+            document.getElementById('d-status').value = 'Disponible';
+            document.getElementById('form-title').innerText = 'Agregar Nuevo Artículo';
+            document.getElementById('btn-save').innerText = 'Guardar Artículo';
             document.getElementById('btn-cancel').style.display = 'none';
             keptImages = [];
             renderKeptImages();
         }
         document.getElementById('btn-cancel').addEventListener('click', resetForm);
 
-        // --- CONVERTIR ARCHIVO A BASE64 ---
         function fileToBase64(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -300,17 +395,18 @@
             });
         }
 
-        // --- GUARDAR O ACTUALIZAR ---
         document.getElementById('dress-form').addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const editId = document.getElementById('edit-id').value;
+            const type = document.getElementById('d-type').value.trim();
             const name = document.getElementById('d-name').value.trim();
             const color = document.getElementById('d-color').value.trim();
             const size = document.getElementById('d-size').value.trim();
             const price = document.getElementById('d-price').value;
             const deposit = document.getElementById('d-deposit').value;
-            const description = document.getElementById('d-desc').value.trim();
+            const status = document.getElementById('d-status').value;
+            const comments = document.getElementById('d-comments').value.trim();
             const files = document.getElementById('d-photos').files;
 
             const btnSave = document.getElementById('btn-save');
@@ -330,7 +426,7 @@
                         body: JSON.stringify({
                             action: 'uploadFile',
                             base64: base64,
-                            filename: `Vestido_${safeName}_${Date.now()}_${i}.${ext}`,
+                            filename: `Articulo_${safeName}_${Date.now()}_${i}.${ext}`,
                             mimeType: files[i].type,
                             folderId: PHOTOS_FOLDER_ID
                         })
@@ -341,25 +437,22 @@
                 }
 
                 const finalImages = [...keptImages, ...uploadedUrls].join(', ');
-
                 btnSave.innerText = editId ? 'Actualizando base de datos...' : 'Guardando en catálogo...';
-
-                const payload = {
-                    action: editId ? 'editDress' : 'addDress',
-                    id: editId,
-                    name, color, size, price, deposit, description,
-                    images: finalImages
-                };
 
                 const res = await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({
+                        action: editId ? 'editDress' : 'addDress',
+                        id: editId,
+                        type, name, size, price, deposit, color,
+                        images: finalImages,
+                        status, comments
+                    })
                 });
                 const data = await res.json();
-
                 if (!data.success) throw new Error(data.error || 'Error al guardar en Sheets');
 
-                alert(editId ? '¡Vestido actualizado correctamente!' : '¡Vestido agregado al catálogo!');
+                alert(editId ? '¡Artículo actualizado correctamente!' : '¡Artículo agregado al catálogo!');
                 resetForm();
                 loadInventory();
 
@@ -368,11 +461,31 @@
                 alert('Ocurrió un error: ' + err.message);
             } finally {
                 btnSave.disabled = false;
-                btnSave.innerText = document.getElementById('edit-id').value ? 'Actualizar Vestido' : 'Guardar Vestido';
+                btnSave.innerText = document.getElementById('edit-id').value ? 'Actualizar Artículo' : 'Guardar Artículo';
             }
         });
 
-        // --- ELIMINAR VESTIDO ---
+        // --- CAMBIAR A DISPONIBLE ---
+        window.markAvailable = async function(id, name) {
+            if (!confirm(`¿Cambiar el estado de "${name}" (${id}) a Disponible?`)) return;
+
+            try {
+                const res = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'updateStatus', id: id, status: 'Disponible' })
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || 'No se pudo actualizar el estado');
+
+                alert(`"${name}" ahora está marcado como Disponible.`);
+                loadInventory();
+            } catch (err) {
+                console.error(err);
+                alert('Error al actualizar estado: ' + err.message);
+            }
+        };
+
+        // --- ELIMINAR ARTÍCULO ---
         window.deleteDress = async function(id, name) {
             if (!confirm(`¿Seguro que deseas eliminar "${name}" (ID: ${id}) del catálogo? Esta acción no se puede deshacer.`)) return;
 
@@ -384,13 +497,198 @@
                 const data = await res.json();
                 if (!data.success) throw new Error(data.error || 'No se pudo eliminar');
 
-                alert('Vestido eliminado.');
+                alert('Artículo eliminado.');
                 loadInventory();
             } catch (err) {
                 console.error(err);
                 alert('Error al eliminar: ' + err.message);
             }
         };
+
+        // ==========================================
+        // --- MODAL DE RENTA Y FIRMA DE CONTRATO ---
+        // ==========================================
+        const rentModal = document.getElementById('rent-modal');
+        const closeRentBtn = document.getElementById('close-rent-modal');
+        const rentStartInput = document.getElementById('r-start-date');
+        const rentEndInput = document.getElementById('r-end-date');
+
+        closeRentBtn.onclick = () => { rentModal.style.display = 'none'; };
+        window.addEventListener('click', (e) => { if (e.target === rentModal) rentModal.style.display = 'none'; });
+
+        window.openRentModal = function(id) {
+            const d = allDresses.find(item => String(item.id) === String(id));
+            if (!d) return;
+            currentRentDress = d;
+
+            document.getElementById('rent-form').reset();
+            document.getElementById('rent-form').style.display = 'block';
+            document.getElementById('contract-ready-container').innerHTML = '';
+
+            document.getElementById('rent-dress-title').innerText = `${d.name} (${d.id})`;
+            document.getElementById('rent-dress-meta').innerText = `${d.type} | Color: ${d.color} | Renta: $${d.price}/noche | Depósito: $${d.deposit}`;
+
+            // Botones de selección de talla
+            const chipsEl = document.getElementById('rent-size-chips');
+            const hiddenSize = document.getElementById('rent-selected-size');
+            chipsEl.innerHTML = '';
+            const sizes = d.size.split(',').map(s => s.trim()).filter(Boolean);
+            if (sizes.length === 0) sizes.push('Única');
+
+            sizes.forEach((sz, idx) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'size-chip-btn' + (idx === 0 ? ' active' : '');
+                btn.innerText = sz;
+                btn.onclick = () => {
+                    chipsEl.querySelectorAll('.size-chip-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    hiddenSize.value = sz;
+                };
+                if (idx === 0) hiddenSize.value = sz;
+                chipsEl.appendChild(btn);
+            });
+
+            document.getElementById('r-days').innerText = '0';
+            document.getElementById('r-subtotal').innerText = '$0.00 MXN';
+            document.getElementById('r-deposit').innerText = `$${d.deposit.toFixed(2)} MXN`;
+            document.getElementById('r-total').innerText = `$${d.deposit.toFixed(2)} MXN`;
+
+            rentModal.style.display = 'block';
+        };
+
+        function calculateRentTotals() {
+            if (!currentRentDress) return { days: 0, subtotal: 0, total: 0 };
+            const sVal = rentStartInput.value;
+            const eVal = rentEndInput.value;
+
+            if (!sVal || !eVal) return { days: 0, subtotal: 0, total: currentRentDress.deposit };
+
+            const [sy, sm, sd] = sVal.split('-').map(Number);
+            const [ey, em, ed] = eVal.split('-').map(Number);
+            const startDate = new Date(sy, sm - 1, sd);
+            const endDate = new Date(ey, em - 1, ed);
+
+            let diffDays = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24));
+            if (diffDays < 1) diffDays = 1; // Mínimo 1 día/noche
+
+            const subtotal = diffDays * currentRentDress.price;
+            const total = subtotal + currentRentDress.deposit;
+
+            document.getElementById('r-days').innerText = `${diffDays} día(s)`;
+            document.getElementById('r-subtotal').innerText = `$${subtotal.toFixed(2)} MXN`;
+            document.getElementById('r-deposit').innerText = `$${currentRentDress.deposit.toFixed(2)} MXN`;
+            document.getElementById('r-total').innerText = `$${total.toFixed(2)} MXN`;
+
+            return { days: diffDays, subtotal, total, startDate, endDate };
+        }
+
+        rentStartInput.addEventListener('change', calculateRentTotals);
+        rentEndInput.addEventListener('change', calculateRentTotals);
+
+        document.getElementById('rent-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentRentDress) return;
+
+            const sVal = rentStartInput.value;
+            const eVal = rentEndInput.value;
+            if (eVal < sVal) {
+                alert('La fecha de devolución no puede ser anterior a la fecha de inicio.');
+                return;
+            }
+
+            const ineFile = document.getElementById('r-ine').files[0];
+            if (!ineFile) {
+                alert('Por favor, adjunta la foto del INE.');
+                return;
+            }
+
+            const btn = document.getElementById('btn-submit-rent');
+            btn.disabled = true;
+            btn.innerText = 'Subiendo INE y cambiando estado a Rentado...';
+
+            try {
+                const clientName = document.getElementById('r-client').value.trim();
+                const phone = document.getElementById('r-phone').value.trim();
+                const address = document.getElementById('r-address').value.trim();
+                const payment = document.getElementById('r-payment').value;
+                const selectedSize = document.getElementById('rent-selected-size').value;
+                const pickupTime = document.getElementById('r-pickup-time').value;
+                const returnTime = document.getElementById('r-return-time').value;
+
+                const calc = calculateRentTotals();
+
+                // 1. Subir INE a Google Drive
+                const ineBase64 = await fileToBase64(ineFile);
+                const safeClient = clientName.replace(/[^a-zA-Z0-9]/g, '_');
+                const ineFileName = `INE_${safeClient}_${Date.now()}.${ineFile.name.split('.').pop()}`;
+
+                const ineRes = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'uploadFile',
+                        base64: ineBase64,
+                        filename: ineFileName,
+                        mimeType: ineFile.type,
+                        folderId: INE_FOLDER_ID
+                    })
+                });
+                const ineData = await ineRes.json();
+                if (!ineData.success) throw new Error(ineData.error || 'Error al subir INE');
+
+                // 2. Cambiar estado del vestido a "Rentado" en Sheets
+                const statusRes = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'updateStatus',
+                        id: currentRentDress.id,
+                        status: 'Rentado'
+                    })
+                });
+                const statusData = await statusRes.json();
+                if (!statusData.success) throw new Error(statusData.error || 'Error al cambiar estado a Rentado');
+
+                // 3. Armar enlace de contrato.html con todos los datos
+                const dateOpts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                const entregaStr = `${calc.startDate.toLocaleDateString('es-MX', dateOpts)} (${pickupTime})`;
+                const devolucionStr = `${calc.endDate.toLocaleDateString('es-MX', dateOpts)} (${returnTime})`;
+                const totalStr = `$${calc.total.toFixed(2)} MXN (Renta ${calc.days}d: $${calc.subtotal.toFixed(2)} + Depósito: $${currentRentDress.deposit.toFixed(2)})`;
+
+                const baseUrl = window.location.origin + window.location.pathname.replace(/admin\.html$/, '').replace(/\/$/, '');
+                const params = new URLSearchParams({
+                    vestido: `${currentRentDress.name} (${currentRentDress.id} - Talla: ${selectedSize})`,
+                    cliente: clientName,
+                    telefono: phone,
+                    direccion: address,
+                    uso: `${sVal} al ${eVal} (${calc.days} día(s))`,
+                    entrega: entregaStr,
+                    devolucion: devolucionStr,
+                    total: totalStr,
+                    pago: payment
+                }).toString();
+                const contratoUrl = `${baseUrl}/contrato.html?${params}`;
+
+                // Mostrar confirmación y botón directo al contrato
+                document.getElementById('rent-form').style.display = 'none';
+                document.getElementById('contract-ready-container').innerHTML = `
+                    <div class="contract-ready-box">
+                        <h3 style="color:#1b7a43; margin-bottom:8px;">✅ Artículo marcado como Rentado e INE guardada</h3>
+                        <p style="font-size:0.9rem; color:#333;">Ahora abre el contrato para recabar la firma del cliente y generar el PDF en Drive.</p>
+                        <a href="${contratoUrl}" target="_blank">📝 Abrir Contrato para Firmar</a>
+                    </div>
+                `;
+
+                // Refrescar el inventario en segundo plano
+                loadInventory();
+
+            } catch (err) {
+                console.error(err);
+                alert('Ocurrió un error: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Guardar Renta, Marcar Rentado e Ir a Firmar';
+            }
+        });
     </script>
 </body>
 </html>
