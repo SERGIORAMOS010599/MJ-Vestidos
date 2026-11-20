@@ -622,3 +622,190 @@ body {
     font-weight: 600;
     text-transform: uppercase;
 }
+/* --- NUEVO LAYOUT DE FILA: BOTONES ARRIBA + PANEL DE RENTAS ABAJO --- */
+.dress-row {
+    align-items: flex-start;
+}
+
+.dress-right-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    flex: 1.25;
+    min-width: 300px;
+}
+
+.dress-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+/* --- TALLAS TACHADAS Y BADGES --- */
+.status-badges-wrap {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    vertical-align: middle;
+    margin-left: 4px;
+}
+
+.status-badge {
+    margin-left: 0;
+    letter-spacing: 0.3px;
+}
+
+.status-custom {
+    background: #fff8e6;
+    color: #9c6f00;
+    border: 1px solid #eed28a;
+}
+
+.size-rented-strike {
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+    color: #b71c1c;
+    font-weight: 600;
+}
+
+.size-avail-text {
+    color: #111;
+    font-weight: 600;
+}
+
+/* --- RECUADRO ELEGANTE DE ENTREGAS / RENTAS DEL MES --- */
+.rental-info-box {
+    width: 100%;
+    background: #faf8f3;
+    border: 1px solid #e6dec8;
+    border-left: 3px solid #d4af37;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 0.84rem;
+    color: #333;
+}
+
+.rental-info-box.has-active {
+    background: #fff9f8;
+    border-color: #f3d4d4;
+    border-left-color: #c0392b;
+}
+
+.rental-box-title {
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #111;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.rental-info-box.has-active .rental-box-title {
+    color: #a52d21;
+}
+
+.rental-active-list {
+    list-style: none;
+    display: grid;
+    gap: 4px;
+}
+
+.rental-active-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 3px 0;
+    border-bottom: 1px dashed #eedcdc;
+}
+
+.rental-active-list li:last-child {
+    border-bottom: none;
+}
+
+.monthly-stats-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.monthly-chip {
+    background: #fff;
+    border: 1px solid #e0d4b0;
+    color: #333;
+    padding: 2px 9px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* --- TALLAS DESHABILITADAS AL FIRMAR CONTRATO --- */
+.size-chip-btn:disabled {
+    background: #f5f5f5;
+    color: #aaa;
+    border-color: #ddd;
+    text-decoration: line-through;
+    cursor: not-allowed;
+}
+
+/* --- MINI MODAL PARA LIBERAR VARIAS TALLAS --- */
+.release-modal-content {
+    max-width: 440px;
+}
+
+.release-options-list {
+    display: grid;
+    gap: 10px;
+    margin: 16px 0 20px 0;
+}
+
+.release-option-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid #e0d8c8;
+    border-radius: 6px;
+    background: #fcfbf8;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.release-option-item:hover {
+    border-color: #d4af37;
+    background: #fff;
+}
+
+.release-option-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #1b7a43;
+    cursor: pointer;
+}
+
+.release-option-text {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.9rem;
+}
+
+.release-option-text small {
+    color: #666;
+    font-size: 0.8rem;
+}
+
+@media (max-width: 780px) {
+    .dress-right-col {
+        align-items: stretch;
+        min-width: 100%;
+    }
+    .dress-actions {
+        justify-content: flex-start;
+    }
+}
