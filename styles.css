@@ -1237,14 +1237,9 @@ input, select {
     scrollbar-color: #d4af37 #eee;
 }
 
-.top-rented-track .dress-card {
-    min-width: 260px;
-    max-width: 260px;
-    flex-shrink: 0;
-    scroll-snap-align: start;
+.top-rented-section .dress-card {
     position: relative;
 }
-
 .rank-badge {
     position: absolute;
     top: 12px;
