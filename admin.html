@@ -319,9 +319,24 @@
             return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
         }
 
-        function parseSizes(sizeStr) {
-            const arr = String(sizeStr || '').split(',').map(s => s.trim()).filter(Boolean);
-            return arr.length ? arr : ['Única'];
+        function getSizeRank(sizeStr) {
+            const s = String(sizeStr || '').trim().toUpperCase();
+            const order = {
+                'XXS': 1, '2XS': 1,
+                'XS': 2, 'ECH': 2,
+                'S': 3, 'CH': 3, 'CHICA': 3,
+                'M': 4, 'MED': 4, 'MEDIANA': 4,
+                'L': 5, 'G': 5, 'GRANDE': 5,
+                'XL': 6, 'EG': 6, 'XG': 6,
+                'XXL': 7, '2XL': 7, 'EEG': 7,
+                'XXXL': 8, '3XL': 8,
+                '4XL': 9
+            };
+            if (order[s] !== undefined) return order[s];
+            const num = parseFloat(s);
+            if (!isNaN(num) && /^\d+(\.\d+)?$/.test(s)) return 100 + num;
+            if (s === 'ÚNICA' || s === 'UNICA' || s === 'UNITALLA') return 500;
+            return 600;
         }
 
         function parseRentControl(raw) {
@@ -369,7 +384,12 @@
                         });
                     }
                 });
-
+                // Ordenar inventario de talla más chica a más grande (y alfabéticamente dentro de cada talla)
+                allDresses.sort((a, b) => {
+                    const rankDiff = getSizeRank(a.size) - getSizeRank(b.size);
+                    if (rankDiff !== 0) return rankDiff;
+                    return a.name.localeCompare(b.name, 'es');
+                });
                 applySearchFilter();
             } catch (err) {
                 console.error(err);
