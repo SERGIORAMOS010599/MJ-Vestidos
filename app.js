@@ -1,9 +1,29 @@
+function getSizeRank(sizeStr) {
+    const s = String(sizeStr || '').trim().toUpperCase();
+    const order = {
+        'XXS': 1, '2XS': 1,
+        'XS': 2, 'ECH': 2,
+        'S': 3, 'CH': 3, 'CHICA': 3,
+        'M': 4, 'MED': 4, 'MEDIANA': 4,
+        'L': 5, 'G': 5, 'GRANDE': 5,
+        'XL': 6, 'EG': 6, 'XG': 6,
+        'XXL': 7, '2XL': 7, 'EEG': 7,
+        'XXXL': 8, '3XL': 8,
+        '4XL': 9
+    };
+    if (order[s] !== undefined) return order[s];
+    const num = parseFloat(s);
+    if (!isNaN(num) && /^\d+(\.\d+)?$/.test(s)) return 100 + num;
+    if (s === 'ÚNICA' || s === 'UNICA' || s === 'UNITALLA') return 500;
+    return 600;
+}
+
 class Dress {
-    constructor(id, type, name, size, price, deposit, color, images, status, comments) {
+    constructor(id, type, name, sizes, price, deposit, color, images, status, comments) {
         this.id = String(id);
         this.type = String(type || 'Vestido');
         this.name = String(name || 'Sin nombre');
-        this.size = String(size || 'Única');
+        this.sizes = Array.isArray(sizes) ? sizes : [String(sizes || 'Única')];
         this.price = Number(price) || 0;
         this.deposit = Number(deposit) || 0;
         this.color = String(color || 'N/A');
@@ -14,13 +34,18 @@ class Dress {
 
     generateCardHTML() {
         const portada = this.images[0] || 'img/proximamente.png';
+        const spheresHtml = this.sizes
+            .map(sz => `<span class="size-sphere">${sz}</span>`)
+            .join('');
+
         return `
             <div class="dress-card" onclick="window.appCatalog.openBookingModal('${this.id}')">
                 <img src="${portada}" alt="${this.name}" class="dress-image" loading="lazy">
                 <div class="dress-info">
                     <h3>${this.name}</h3>
-                    <p><strong>Color:</strong> ${this.color} | <strong>Tallas:</strong> ${this.size}</p>
-                    <p style="font-size: 0.85rem; margin: 8px 0; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">${this.type}</p>
+                    <p><strong>Color:</strong> ${this.color}</p>
+                    <div class="size-spheres-container">${spheresHtml}</div>
+                    <p style="font-size: 0.8rem; margin: 6px 0; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">${this.type}</p>
                     <p class="dress-price">$${this.price.toFixed(2)} MXN / noche</p>
                 </div>
             </div>
@@ -34,7 +59,7 @@ class Catalog {
         this.dresses = [];
         this.selectedDress = null;
         this.currentPage = 1;
-        this.itemsPerPage = 50; // Conservamos 50 por página
+        this.itemsPerPage = 50;
         this.initModalEvents();
         this.loadFromGoogleSheets();
     }
@@ -51,27 +76,64 @@ class Catalog {
             const json = JSON.parse(text.substring(47).slice(0, -2));
             const rows = json.table.rows;
 
-            this.dresses = [];
+            // Agrupar filas del mismo vestido usando el ID base (antes del guion, ej. "V1-XS" -> "V1")
+            const groupedMap = new Map();
 
             rows.forEach((row) => {
                 const firstCell = row && row.c && row.c[0] && row.c[0].v ? String(row.c[0].v).trim() : '';
-                // Ignorar fila de encabezados o filas vacías
                 if (firstCell && firstCell.toUpperCase() !== 'ID' && firstCell.toUpperCase() !== 'ID ARTICULO') {
-                    const id       = firstCell;
-                    const type     = row.c[1] && row.c[1].v ? row.c[1].v : 'Vestido';
-                    const name     = row.c[2] && row.c[2].v ? row.c[2].v : 'Sin nombre';
-                    const size     = row.c[3] && row.c[3].v ? row.c[3].v : 'Única';
+                    const baseId   = firstCell.split('-')[0].trim().toUpperCase();
+                    const type     = row.c[1] && row.c[1].v ? String(row.c[1].v).trim() : 'Vestido';
+                    const name     = row.c[2] && row.c[2].v ? String(row.c[2].v).trim() : 'Sin nombre';
+                    const size     = row.c[3] && row.c[3].v ? String(row.c[3].v).trim() : 'Única';
                     const price    = row.c[4] && row.c[4].v ? parseFloat(row.c[4].v) : 0;
                     const deposit  = row.c[5] && row.c[5].v ? parseFloat(row.c[5].v) : 0;
-                    const color    = row.c[6] && row.c[6].v ? row.c[6].v : 'N/A';
-                    const imgStr   = row.c[7] && row.c[7].v ? String(row.c[7].v) : 'img/proximamente.png';
-                    const status   = row.c[8] && row.c[8].v ? row.c[8].v : 'Disponible';
-                    const comments = row.c[9] && row.c[9].v ? row.c[9].v : '';
+                    const color    = row.c[6] && row.c[6].v ? String(row.c[6].v).trim() : 'N/A';
+                    const imgStr   = row.c[7] && row.c[7].v ? String(row.c[7].v) : '';
+                    const status   = row.c[8] && row.c[8].v ? String(row.c[8].v).trim() : 'Disponible';
+                    const comments = row.c[9] && row.c[9].v ? String(row.c[9].v).trim() : '';
 
-                    const images = imgStr.split(',').map(img => img.trim()).filter(Boolean);
+                    const images = imgStr ? imgStr.split(',').map(img => img.trim()).filter(Boolean) : [];
+                    const isAvail = !status.toLowerCase().includes('rentado');
 
-                    this.dresses.push(new Dress(id, type, name, size, price, deposit, color, images, status, comments));
+                    if (!groupedMap.has(baseId)) {
+                        groupedMap.set(baseId, {
+                            id: baseId,
+                            type,
+                            name,
+                            sizesSet: new Set([size]),
+                            price,
+                            deposit,
+                            color,
+                            images: images.length ? images : ['img/proximamente.png'],
+                            hasAvailable: isAvail,
+                            comments
+                        });
+                    } else {
+                        const existing = groupedMap.get(baseId);
+                        existing.sizesSet.add(size);
+                        if (isAvail) existing.hasAvailable = true;
+                        if (existing.images[0] === 'img/proximamente.png' && images.length) {
+                            existing.images = images;
+                        }
+                        if (!existing.comments && comments) {
+                            existing.comments = comments;
+                        }
+                    }
                 }
+            });
+
+            this.dresses = Array.from(groupedMap.values()).map(item => {
+                const sortedSizes = Array.from(item.sizesSet).sort((a, b) => {
+                    const diff = getSizeRank(a) - getSizeRank(b);
+                    return diff !== 0 ? diff : a.localeCompare(b, 'es');
+                });
+                const finalStatus = item.hasAvailable ? 'Disponible' : 'Rentado';
+                return new Dress(
+                    item.id, item.type, item.name, sortedSizes,
+                    item.price, item.deposit, item.color,
+                    item.images, finalStatus, item.comments
+                );
             });
 
             this.currentPage = 1;
@@ -195,7 +257,6 @@ class Catalog {
         document.getElementById('modal-dress-deposit').innerText = `Depósito reembolsable: $${d.deposit.toFixed(2)} MXN`;
         document.getElementById('modal-dress-color').innerText = d.color;
 
-        // Estado visual
         const statusEl = document.getElementById('modal-status-badge');
         const isRentado = d.status.toLowerCase().includes('rentado');
         statusEl.innerText = isRentado ? 'Actualmente Rentado' : 'Disponible';
@@ -203,24 +264,12 @@ class Catalog {
         statusEl.style.color = isRentado ? '#b71c1c' : '#1b7a43';
         statusEl.style.border = isRentado ? '1px solid #f5c6cb' : '1px solid #b7e4c7';
 
-        // Tallas como etiquetas limpias
+        // Esferitas de tallas también dentro del modal
         const sizesContainer = document.getElementById('modal-dress-sizes');
-        sizesContainer.innerHTML = '';
-        const sizesArray = d.size.split(',').map(s => s.trim()).filter(Boolean);
-        (sizesArray.length ? sizesArray : ['Única']).forEach(sz => {
-            const chip = document.createElement('span');
-            chip.innerText = sz;
-            chip.style.padding = '5px 14px';
-            chip.style.border = '1px solid #111';
-            chip.style.borderRadius = '20px';
-            chip.style.fontSize = '0.85rem';
-            chip.style.fontWeight = '600';
-            chip.style.background = '#111';
-            chip.style.color = '#d4af37';
-            sizesContainer.appendChild(chip);
-        });
+        sizesContainer.innerHTML = d.sizes
+            .map(sz => `<span class="size-sphere">${sz}</span>`)
+            .join('');
 
-        // Comentarios / Extras
         const commentsWrap = document.getElementById('modal-dress-comments-wrap');
         const commentsEl = document.getElementById('modal-dress-comments');
         if (d.comments.trim()) {
