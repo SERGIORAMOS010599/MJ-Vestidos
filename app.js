@@ -158,7 +158,43 @@ class Catalog {
         this.initCitaEvents();
         this.loadFromGoogleSheets();
     }
+    // =========================================
+    // --- PASARELA CINEMATOGRÁFICA DE PORTADA ---
+    // =========================================
+    initHeroRunway() {
+        const track = document.getElementById('hero-runway-track');
+        if (!track) return;
 
+        // Tomar solo vestidos que sí tengan foto real (ignorar proximamente.png)
+        const realPhotos = this.allDresses
+            .map(d => d.images[0])
+            .filter(url => url && !url.toLowerCase().includes('proximamente.png'));
+
+        if (realPhotos.length === 0) return;
+
+        // Mezclar aleatoriamente y tomar hasta 18 fotos para que cargue súper rápido
+        const shuffled = [...realPhotos];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+
+        let selected = shuffled.slice(0, 18);
+        // Si hay poquitas fotos, repetir hasta tener al menos 8 para llenar pantallas anchas
+        while (selected.length < 8) {
+            selected = selected.concat(shuffled);
+        }
+
+        // Duplicar la lista exacta para que el bucle -50% sea infinito sin saltos
+        const loopList = [...selected, ...selected];
+
+        // Velocidad constante y suave (~4 segundos por vestido)
+        track.style.animationDuration = `${selected.length * 4}s`;
+
+        track.innerHTML = loopList
+            .map(url => `<div class="hero-runway-slide"><img src="${url}" alt="Colección MJ Vestidos"></div>`)
+            .join('');
+    }
     async loadFromGoogleSheets() {
         this.container.innerHTML = '<p style="text-align:center; width:100%;">Cargando catálogo de MJ Vestidos...</p>';
         const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&t=${Date.now()}`;
