@@ -261,7 +261,12 @@ class Catalog {
             });
 
             this.buildFilterOptions();
-            this.renderTopRented();
+            this.topRentedDresses = !IS_SALES_CATALOG
+                ? [...this.allDresses]
+                    .filter(d => d.totalRentals > 0)
+                    .sort((a, b) => b.totalRentals - a.totalRentals)
+                    .slice(0, 20)
+                : [];
             this.applyFilters(false);
             this.initHeroRunway();
         } catch (error) {
