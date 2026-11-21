@@ -150,7 +150,6 @@ class Dress {
 class Catalog {
     constructor(containerId) {
         this.container = document.getElementById(containerId);
-        this.filteredDresses = [];
         this.allDresses = [];
         this.filteredDresses = [];
         this.topRentedDresses = [];
@@ -260,13 +259,14 @@ class Catalog {
                 );
             });
 
-            this.buildFilterOptions();
             this.topRentedDresses = !IS_SALES_CATALOG
                 ? [...this.allDresses]
                     .filter(d => d.totalRentals > 0)
                     .sort((a, b) => b.totalRentals - a.totalRentals)
                     .slice(0, 20)
                 : [];
+
+            this.buildFilterOptions();
             this.applyFilters(false);
             this.initHeroRunway();
         } catch (error) {
@@ -274,7 +274,6 @@ class Catalog {
             this.container.innerHTML = '<p style="text-align:center; width:100%; color:red;">No se pudo cargar el catálogo. Verifica tu conexión.</p>';
         }
     }
-
 
     // =========================================
     // --- PASARELA CINEMATOGRÁFICA DE PORTADA ---
@@ -321,12 +320,12 @@ class Catalog {
         const maxRange = document.getElementById('price-max-range');
 
         const openDrawer = () => {
-            overlay.classList.add('open');
-            drawer.classList.add('open');
+            if (overlay) overlay.classList.add('open');
+            if (drawer) drawer.classList.add('open');
         };
         const closeDrawer = () => {
-            overlay.classList.remove('open');
-            drawer.classList.remove('open');
+            if (overlay) overlay.classList.remove('open');
+            if (drawer) drawer.classList.remove('open');
         };
 
         if (btnOpen) btnOpen.addEventListener('click', openDrawer);
@@ -376,8 +375,8 @@ class Catalog {
                 this.filterState.maxPrice = this.filterState.absMaxPrice;
 
                 document.querySelectorAll('.filter-chip.active').forEach(b => b.classList.remove('active'));
-                minRange.value = this.filterState.absMinPrice;
-                maxRange.value = this.filterState.absMaxPrice;
+                if (minRange) minRange.value = this.filterState.absMinPrice;
+                if (maxRange) maxRange.value = this.filterState.absMaxPrice;
                 this.updatePriceSliderUI();
                 this.applyFilters(false);
             });
@@ -405,46 +404,50 @@ class Catalog {
         });
 
         const sizesEl = document.getElementById('filter-sizes-list');
-        sizesEl.innerHTML = '';
-        sortedSizes.forEach(sz => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'filter-chip';
-            btn.innerText = sz;
-            btn.onclick = () => {
-                if (this.filterState.sizes.has(sz)) {
-                    this.filterState.sizes.delete(sz);
-                    btn.classList.remove('active');
-                } else {
-                    this.filterState.sizes.add(sz);
-                    btn.classList.add('active');
-                }
-                this.applyFilters(false);
-            };
-            sizesEl.appendChild(btn);
-        });
-
-        const colorsEl = document.getElementById('filter-colors-list');
-        colorsEl.innerHTML = '';
-        Array.from(colorsMap.entries())
-            .sort((a, b) => a[0].localeCompare(b[0], 'es'))
-            .forEach(([label, hex]) => {
+        if (sizesEl) {
+            sizesEl.innerHTML = '';
+            sortedSizes.forEach(sz => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'filter-chip';
-                btn.innerHTML = `<span class="color-swatch" style="background:${hex};"></span>${label}`;
+                btn.innerText = sz;
                 btn.onclick = () => {
-                    if (this.filterState.colors.has(label)) {
-                        this.filterState.colors.delete(label);
+                    if (this.filterState.sizes.has(sz)) {
+                        this.filterState.sizes.delete(sz);
                         btn.classList.remove('active');
                     } else {
-                        this.filterState.colors.add(label);
+                        this.filterState.sizes.add(sz);
                         btn.classList.add('active');
                     }
                     this.applyFilters(false);
                 };
-                colorsEl.appendChild(btn);
+                sizesEl.appendChild(btn);
             });
+        }
+
+        const colorsEl = document.getElementById('filter-colors-list');
+        if (colorsEl) {
+            colorsEl.innerHTML = '';
+            Array.from(colorsMap.entries())
+                .sort((a, b) => a[0].localeCompare(b[0], 'es'))
+                .forEach(([label, hex]) => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'filter-chip';
+                    btn.innerHTML = `<span class="color-swatch" style="background:${hex};"></span>${label}`;
+                    btn.onclick = () => {
+                        if (this.filterState.colors.has(label)) {
+                            this.filterState.colors.delete(label);
+                            btn.classList.remove('active');
+                        } else {
+                            this.filterState.colors.add(label);
+                            btn.classList.add('active');
+                        }
+                        this.applyFilters(false);
+                    };
+                    colorsEl.appendChild(btn);
+                });
+        }
 
         if (!isFinite(minP)) minP = 0;
         if (maxP <= minP) maxP = minP + 500;
@@ -455,22 +458,28 @@ class Catalog {
 
         const minRange = document.getElementById('price-min-range');
         const maxRange = document.getElementById('price-max-range');
-        minRange.min = minP; minRange.max = maxP; minRange.value = minP;
-        maxRange.min = minP; maxRange.max = maxP; maxRange.value = maxP;
+        if (minRange && maxRange) {
+            minRange.min = minP; minRange.max = maxP; minRange.value = minP;
+            maxRange.min = minP; maxRange.max = maxP; maxRange.value = maxP;
+        }
         this.updatePriceSliderUI();
     }
 
     updatePriceSliderUI() {
         const { minPrice, maxPrice, absMinPrice, absMaxPrice } = this.filterState;
-        document.getElementById('filter-price-label').innerText =
-            `$${minPrice.toLocaleString('es-MX')} — $${maxPrice.toLocaleString('es-MX')}`;
+        const labelEl = document.getElementById('filter-price-label');
+        if (labelEl) {
+            labelEl.innerText = `$${minPrice.toLocaleString('es-MX')} — $${maxPrice.toLocaleString('es-MX')}`;
+        }
 
         const fill = document.getElementById('price-range-fill');
-        const span = Math.max(1, absMaxPrice - absMinPrice);
-        const leftPct = ((minPrice - absMinPrice) / span) * 100;
-        const rightPct = ((maxPrice - absMinPrice) / span) * 100;
-        fill.style.left = `${leftPct}%`;
-        fill.style.width = `${Math.max(0, rightPct - leftPct)}%`;
+        if (fill) {
+            const span = Math.max(1, absMaxPrice - absMinPrice);
+            const leftPct = ((minPrice - absMinPrice) / span) * 100;
+            const rightPct = ((maxPrice - absMinPrice) / span) * 100;
+            fill.style.left = `${leftPct}%`;
+            fill.style.width = `${Math.max(0, rightPct - leftPct)}%`;
+        }
     }
 
     applyFilters(resetPage = true) {
@@ -502,9 +511,9 @@ class Catalog {
     }
 
     // =========================================
-    // --- RENDER Y PAGINACIÓN ---
+    // --- PAGINACIÓN (20 TOP + 30 EN PÁG 1, 50 EN PÁG 2+) ---
     // =========================================
-   getPaginationState() {
+    getPaginationState() {
         const isSplitView = !IS_SALES_CATALOG && !this.hasActiveFiltersFlag && this.topRentedDresses.length > 0;
         if (!isSplitView) {
             const totalPages = Math.max(1, Math.ceil(this.filteredDresses.length / this.itemsPerPage));
@@ -531,7 +540,6 @@ class Catalog {
         const { isSplitView, totalPages, regularDresses, page1RegularLimit } = this.getPaginationState();
         if (this.currentPage > totalPages) this.currentPage = totalPages;
 
-        // Mostrar "Los Más Rentados" solo en la página 1 (cuando no hay filtros activos)
         const topSection = document.getElementById('mas-rentados');
         const topContainer = document.getElementById('top-rented-container');
         if (topSection && topContainer) {
@@ -574,6 +582,29 @@ class Catalog {
         this.renderPagination(totalPages);
     }
 
+    renderPagination(totalPages) {
+        const paginationContainer = document.getElementById('pagination-controls');
+        if (!paginationContainer) return;
+
+        if (this.filteredDresses.length === 0) {
+            paginationContainer.innerHTML = '';
+            return;
+        }
+
+        const disableBack5 = this.currentPage <= 5;
+        const disablePrev  = this.currentPage <= 1;
+        const disableNext  = this.currentPage >= totalPages;
+        const disableNext5 = (this.currentPage + 5) > totalPages;
+
+        paginationContainer.innerHTML = `
+            <button class="page-btn" title="Retroceder 5 páginas" ${disableBack5 ? 'disabled' : ''} onclick="window.appCatalog.changePage(${this.currentPage - 5})">&laquo; 5</button>
+            <button class="page-btn" title="Página anterior" ${disablePrev ? 'disabled' : ''} onclick="window.appCatalog.changePage(${this.currentPage - 1})">&lsaquo;</button>
+            <span class="page-info">Página ${this.currentPage} de ${totalPages}</span>
+            <button class="page-btn" title="Página siguiente" ${disableNext ? 'disabled' : ''} onclick="window.appCatalog.changePage(${this.currentPage + 1})">&rsaquo;</button>
+            <button class="page-btn" title="Avanzar 5 páginas" ${disableNext5 ? 'disabled' : ''} onclick="window.appCatalog.changePage(${this.currentPage + 5})">5 &raquo;</button>
+        `;
+    }
+
     changePage(newPage) {
         const { isSplitView, totalPages } = this.getPaginationState();
         if (newPage < 1 || newPage > totalPages) return;
@@ -584,15 +615,6 @@ class Catalog {
             ? document.getElementById('mas-rentados')
             : document.getElementById('catalogo');
         if (targetSection) targetSection.scrollIntoView({ behavior: 'smooth' });
-    }
-
-    changePage(newPage) {
-        const totalPages = Math.max(1, Math.ceil(this.filteredDresses.length / this.itemsPerPage));
-        if (newPage < 1 || newPage > totalPages) return;
-        this.currentPage = newPage;
-        this.render();
-        const catalogSection = document.getElementById('catalogo');
-        if (catalogSection) catalogSection.scrollIntoView({ behavior: 'smooth' });
     }
 
     // =========================================
@@ -684,7 +706,6 @@ class Catalog {
             });
         }
 
-        // Botón "Agenda tu Cita" en la barra de navegación (sin vestido específico)
         const navCitaBtn = document.getElementById('nav-agenda-cita');
         if (navCitaBtn) {
             navCitaBtn.addEventListener('click', (e) => {
@@ -771,7 +792,6 @@ class Catalog {
                         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
                     });
 
-                    // Si viene del menú superior no menciona ningún vestido
                     const waMsg = dressName
                         ? `Hola, acabo de agendar una cita en MJ Vestidos para el ${prettyDate} a las ${this.selectedTime}. Estoy interesada en el vestido ${dressName}. Mi nombre es ${clientName}.`
                         : `Hola, acabo de agendar una cita en MJ Vestidos para el ${prettyDate} a las ${this.selectedTime}. Me gustaría conocer sus vestidos disponibles. Mi nombre es ${clientName}.`;
