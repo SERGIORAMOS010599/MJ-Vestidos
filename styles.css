@@ -1100,3 +1100,98 @@ input, select {
         padding-top: 18px;
     }
 }
+/* --- PORTADA CINEMATOGRÁFICA (PASARELA CONTINUA) --- */
+.hero {
+    position: relative;
+    overflow: hidden;
+    background-color: #0e0e0e;
+}
+
+.hero-runway {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.hero-runway-track {
+    display: flex;
+    height: 100%;
+    width: max-content;
+    gap: 8px;
+    animation: heroRunwayScroll 65s linear infinite;
+    will-change: transform;
+}
+
+.hero-runway-slide {
+    height: 100%;
+    width: 280px;
+    flex-shrink: 0;
+    overflow: hidden;
+    background: #111;
+}
+
+.hero-runway-slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+    filter: brightness(0.88) contrast(1.05);
+    display: block;
+}
+
+@keyframes heroRunwayScroll {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+.hero-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: radial-gradient(
+        circle at center,
+        rgba(10, 10, 10, 0.48) 0%,
+        rgba(10, 10, 10, 0.78) 100%
+    );
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+}
+
+.hero-content h1 {
+    color: #ffffff;
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.65);
+}
+
+.hero-content p {
+    color: #f3ede2;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+}
+
+.hero-content .btn-primary {
+    background-color: rgba(17, 17, 17, 0.9);
+    color: #d4af37;
+    border: 1.5px solid #d4af37;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    transition: all 0.25s ease;
+}
+
+.hero-content .btn-primary:hover {
+    background-color: #d4af37;
+    color: #111;
+}
+
+@media (max-width: 768px) {
+    .hero-runway-slide {
+        width: 190px;
+    }
+}
