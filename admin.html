@@ -17,9 +17,12 @@
         <button id="btn-unlock" class="btn btn-gold btn-unlock">Entrar al Panel</button>
     </div>
 
-    <header class="admin-header">
+<header class="admin-header">
         <h1>Admin | MJ Vestidos</h1>
-        <a href="index.html">Ver Catálogo</a>
+        <div class="header-nav">
+            <a href="ventas.html" class="btn-nav-sales">🏷️ Ventas</a>
+            <a href="index.html">Ver Catálogo</a>
+        </div>
     </header>
 
     <div class="container">
@@ -90,13 +93,18 @@
             <div class="inventory-header">
                 <h2>Inventario Actual (<span id="count-dresses">0</span>)</h2>
 
-                <div class="search-wrapper">
-                    <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                    </svg>
-                    <input type="text" id="search-input" class="search-input" placeholder="Buscar nombre, tipo, color, talla, estado, ID...">
-                    <button type="button" id="clear-search" class="clear-search-btn" title="Limpiar búsqueda">&times;</button>
+                <div class="inventory-tools">
+                    <button type="button" id="btn-move-sales" class="btn btn-move-sales">🏷️ Mover a Ventas (0)</button>
+                    <button type="button" id="btn-toggle-select" class="btn btn-select-mode">☑️ Seleccionar</button>
+
+                    <div class="search-wrapper">
+                        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <input type="text" id="search-input" class="search-input" placeholder="Buscar nombre, tipo, color, talla, estado, ID...">
+                        <button type="button" id="clear-search" class="clear-search-btn" title="Limpiar búsqueda">&times;</button>
+                    </div>
                 </div>
             </div>
 
@@ -340,8 +348,89 @@
             searchInput.focus();
         });
 
-        // --- RENDERIZAR INVENTARIO CON TALLAS TACHADAS, BADGES Y RECUADRO DE RENTAS ---
-        // --- RENDERIZAR INVENTARIO CON TALLAS TACHADAS, CONTADOR SIEMPRE VISIBLE Y RENTAS ACTIVAS ---
+        // --- MODO SELECCIÓN PARA MOVER A VENTAS ---
+        let isSelectionMode = false;
+        let selectedIds = new Set();
+
+        const btnToggleSelect = document.getElementById('btn-toggle-select');
+        const btnMoveSales = document.getElementById('btn-move-sales');
+
+        function updateMoveSalesButton() {
+            if (isSelectionMode && selectedIds.size > 0) {
+                btnMoveSales.style.display = 'inline-block';
+                btnMoveSales.innerText = `🏷️ Mover a Ventas (${selectedIds.size})`;
+            } else {
+                btnMoveSales.style.display = 'none';
+            }
+        }
+
+        btnToggleSelect.addEventListener('click', () => {
+            isSelectionMode = !isSelectionMode;
+            selectedIds.clear();
+
+            if (isSelectionMode) {
+                btnToggleSelect.classList.add('active');
+                btnToggleSelect.innerText = '✖️ Cancelar';
+            } else {
+                btnToggleSelect.classList.remove('active');
+                btnToggleSelect.innerText = '☑️ Seleccionar';
+            }
+
+            updateMoveSalesButton();
+            applySearchFilter();
+        });
+
+        window.toggleDressSelection = function(id, isChecked) {
+            if (isChecked) {
+                selectedIds.add(String(id));
+            } else {
+                selectedIds.delete(String(id));
+            }
+            updateMoveSalesButton();
+            applySearchFilter();
+        };
+
+        btnMoveSales.addEventListener('click', async () => {
+            if (selectedIds.size === 0) return;
+
+            const count = selectedIds.size;
+            if (!confirm(`¿Mover ${count} artículo(s) a la sección de VENTAS?\n\nDesaparecerán del catálogo principal y del inventario de rentas.`)) {
+                return;
+            }
+
+            btnMoveSales.disabled = true;
+            btnMoveSales.innerText = 'Moviendo a Ventas...';
+
+            try {
+                const res = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'moveToSales',
+                        ids: Array.from(selectedIds)
+                    })
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || 'No se pudieron mover los artículos.');
+
+                alert(`¡${data.moved} artículo(s) movido(s) a Ventas correctamente!`);
+
+                // Salir de modo selección y recargar lista
+                isSelectionMode = false;
+                selectedIds.clear();
+                btnToggleSelect.classList.remove('active');
+                btnToggleSelect.innerText = '☑️ Seleccionar';
+                updateMoveSalesButton();
+                loadInventory();
+            } catch (err) {
+                console.error(err);
+                alert('Error al mover a ventas: ' + err.message);
+            } finally {
+                btnMoveSales.disabled = false;
+                updateMoveSalesButton();
+            }
+        });
+
+        // --- RENDERIZAR INVENTARIO ---
         function renderInventory(list, isFiltered) {
             const listEl = document.getElementById('inventory-list');
             const countEl = document.getElementById('count-dresses');
@@ -365,18 +454,20 @@
 
                 const rentedSizes = sizesArr.filter(sz => Boolean(activeMap[sz]));
                 const availSizes = sizesArr.filter(sz => !activeMap[sz]);
-
-                // Conserva el orden en que se fueron rentando (las nuevas se agregan abajo)
                 const orderedRentedSizes = Object.keys(activeMap).filter(sz => sizesArr.includes(sz));
 
-                // 1. Tallas con raya en medio si están rentadas
+                const isSelected = selectedIds.has(String(d.id));
+                const disabledAttr = isSelectionMode ? 'disabled' : '';
+                const checkboxHtml = isSelectionMode
+                    ? `<input type="checkbox" class="dress-select-check" ${isSelected ? 'checked' : ''} onchange="toggleDressSelection('${d.id}', this.checked)">`
+                    : '';
+
                 const sizeDisplayHtml = sizesArr.map(sz => {
                     return activeMap[sz]
                         ? `<span class="size-rented-strike" title="Talla rentada">${sz}</span>`
                         : `<span class="size-avail-text">${sz}</span>`;
                 }).join(', ');
 
-                // 2. Labels dinámicos de Estado
                 const lowerStatus = d.status.toLowerCase();
                 const isCustomStatus = rentedSizes.length === 0 && !lowerStatus.includes('disponible') && !lowerStatus.includes('rentado');
                 let badgesHtml = '';
@@ -393,7 +484,6 @@
                     }
                 }
 
-                // 3. Recuadro de Rentas del Mes (SIEMPRE visible debajo de los botones)
                 const monthData = (d.rentControl.monthly && d.rentControl.monthly[monthKey]) || {};
                 const totalMonth = Object.values(monthData).reduce((acc, n) => acc + Number(n || 0), 0);
                 const breakdownChips = sizesArr.map(sz => {
@@ -411,7 +501,6 @@
                     </div>
                 `;
 
-                // 4. Recuadro de Tallas Rentadas (debajo del contador mensual cuando hay rentas activas)
                 let activeBoxHtml = '';
                 if (orderedRentedSizes.length > 0) {
                     const itemsLi = orderedRentedSizes.map(sz => {
@@ -435,7 +524,8 @@
                 }
 
                 return `
-                    <div class="dress-row">
+                    <div class="dress-row ${isSelected ? 'selected-row' : ''}">
+                        ${checkboxHtml}
                         <img src="${thumb}" alt="${d.name}" loading="lazy">
                         <div class="dress-meta">
                             <h3>${d.name} <span class="dress-id">(ID: ${d.id})</span></h3>
@@ -450,10 +540,10 @@
 
                         <div class="dress-right-col">
                             <div class="dress-actions">
-                                <button class="btn btn-available" onclick="handleReleaseClick('${d.id}')">✅ Cambiar a Disponible</button>
-                                <button class="btn btn-contract" onclick="openRentModal('${d.id}')">📝 Firmar Contrato</button>
-                                <button class="btn btn-edit" onclick="startEdit('${d.id}')">✏️ Editar</button>
-                                <button class="btn btn-delete" onclick="deleteDress('${d.id}', '${safeName}')">🗑️ Eliminar</button>
+                                <button class="btn btn-available" ${disabledAttr} onclick="handleReleaseClick('${d.id}')">✅ Cambiar a Disponible</button>
+                                <button class="btn btn-contract" ${disabledAttr} onclick="openRentModal('${d.id}')">📝 Firmar Contrato</button>
+                                <button class="btn btn-edit" ${disabledAttr} onclick="startEdit('${d.id}')">✏️ Editar</button>
+                                <button class="btn btn-delete" ${disabledAttr} onclick="deleteDress('${d.id}', '${safeName}')">🗑️ Eliminar</button>
                             </div>
                             ${monthlyBoxHtml}
                             ${activeBoxHtml}
