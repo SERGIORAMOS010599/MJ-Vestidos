@@ -1206,9 +1206,9 @@ input, select {
     font-weight: 600;
 }
 
-/* --- SECCIÓN: LOS MÁS RENTADOS (TOP 20) --- */
+/* --- SECCIÓN: LOS MÁS RENTADOS (TOP 20 EN CUADRÍCULA) --- */
 .top-rented-section {
-    padding: 55px 5% 15px 5%;
+    padding: 55px 5% 30px 5%;
     background-color: #faf8f3;
     border-bottom: 1px solid #ece6d8;
     text-align: center;
@@ -1224,22 +1224,13 @@ input, select {
 .top-rented-subtitle {
     font-size: 0.92rem;
     color: #666;
-    margin-bottom: 22px;
-}
-
-.top-rented-track {
-    display: flex;
-    gap: 22px;
-    overflow-x: auto;
-    padding: 10px 4px 22px 4px;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: thin;
-    scrollbar-color: #d4af37 #eee;
+    margin-bottom: 26px;
 }
 
 .top-rented-section .dress-card {
     position: relative;
 }
+
 .rank-badge {
     position: absolute;
     top: 12px;
