@@ -150,8 +150,11 @@ class Dress {
 class Catalog {
     constructor(containerId) {
         this.container = document.getElementById(containerId);
+        this.filteredDresses = [];
         this.allDresses = [];
         this.filteredDresses = [];
+        this.topRentedDresses = [];
+        this.hasActiveFiltersFlag = false;
         this.selectedDress = null;
         this.citaDressName = '';
         this.currentPage = 1;
