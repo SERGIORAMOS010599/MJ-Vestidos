@@ -2,21 +2,77 @@
 const CLAVE_SECRETA = 'MJ2026';
 const SHEET_ID = '18gsvPp2HSMR0DKIfYfZijnwc_PyNV7ULch-UDEVupV0';
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwaKJxY7JErnXQUYi_OCTuKmGjyBoxlPe-RRcM_XmSkYrwRic2EK7nYSDN-W8VmmiSN/exec';
-const PHOTOS_FOLDER_ID = '1YLrFG-atDTRZdCConiuhAtsNXhax_nqN'; // <--- PEGA TU ID AQUÍ
+const PHOTOS_FOLDER_ID = '1YLrFG-atDTRZdCConiuhAtsNXhax_nqN';
 const SHEET_NAME = 'VENTAS';
+
+const SESSION_KEY = 'mj_admin_last_activity';
+const INACTIVITY_LIMIT = 60 * 60 * 1000; // 1 hora
 
 let allSales = [];
 let keptImages = [];
+let isSelectionMode = false;
+let selectedIds = new Set();
 
-// --- BLOQUEO POR PIN ---
+// --- SESIÓN COMPARTIDA CON CIERRE POR INACTIVIDAD (1 HORA) ---
 const authOverlay = document.getElementById('auth-overlay');
 const pinInput = document.getElementById('admin-pin');
 const btnUnlock = document.getElementById('btn-unlock');
 
+let sessionInterval = null;
+let lastWriteTime = 0;
+
+function isSessionValid() {
+    const last = Number(localStorage.getItem(SESSION_KEY) || 0);
+    return last > 0 && (Date.now() - last) < INACTIVITY_LIMIT;
+}
+
+function refreshActivity() {
+    if (authOverlay.style.display !== 'none') return;
+    const now = Date.now();
+    if (now - lastWriteTime > 15000) {
+        localStorage.setItem(SESSION_KEY, String(now));
+        lastWriteTime = now;
+    }
+}
+
+function lockSession(byTimeout) {
+    localStorage.removeItem(SESSION_KEY);
+    if (sessionInterval) {
+        clearInterval(sessionInterval);
+        sessionInterval = null;
+    }
+    pinInput.value = '';
+    authOverlay.style.display = 'flex';
+    if (byTimeout) {
+        alert('Tu sesión se cerró automáticamente tras 1 hora de inactividad.');
+    }
+}
+
+function startSessionMonitor() {
+    if (sessionInterval) clearInterval(sessionInterval);
+    sessionInterval = setInterval(() => {
+        if (!isSessionValid()) {
+            lockSession(true);
+        }
+    }, 30000);
+}
+
+function unlockSales() {
+    const now = Date.now();
+    localStorage.setItem(SESSION_KEY, String(now));
+    lastWriteTime = now;
+    authOverlay.style.display = 'none';
+    startSessionMonitor();
+    loadSales();
+}
+
+['click', 'keydown', 'mousemove', 'scroll', 'touchstart'].forEach(evt => {
+    window.addEventListener(evt, refreshActivity, { passive: true });
+});
+
 btnUnlock.addEventListener('click', () => {
     if (pinInput.value === CLAVE_SECRETA) {
-        authOverlay.style.display = 'none';
-        loadSales();
+        unlockSales();
     } else {
         alert('Clave incorrecta.');
         pinInput.value = '';
@@ -27,6 +83,84 @@ pinInput.addEventListener('keypress', e => { if (e.key === 'Enter') btnUnlock.cl
 function normalizeText(str) {
     return String(str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
+
+// --- MODO SELECCIÓN PARA MOVER A VESTIDOS ---
+const btnToggleSelect = document.getElementById('btn-toggle-select');
+const btnMoveDresses = document.getElementById('btn-move-dresses');
+
+function updateMoveDressesButton() {
+    if (isSelectionMode && selectedIds.size > 0) {
+        btnMoveDresses.style.display = 'inline-block';
+        btnMoveDresses.innerText = `👗 Mover a Vestidos (${selectedIds.size})`;
+    } else {
+        btnMoveDresses.style.display = 'none';
+    }
+}
+
+btnToggleSelect.addEventListener('click', () => {
+    isSelectionMode = !isSelectionMode;
+    selectedIds.clear();
+
+    if (isSelectionMode) {
+        btnToggleSelect.classList.add('active');
+        btnToggleSelect.innerText = '✖️ Cancelar';
+    } else {
+        btnToggleSelect.classList.remove('active');
+        btnToggleSelect.innerText = '☑️ Seleccionar';
+    }
+
+    updateMoveDressesButton();
+    applySearchFilter();
+});
+
+window.toggleSaleSelection = function(id, isChecked) {
+    if (isChecked) {
+        selectedIds.add(String(id));
+    } else {
+        selectedIds.delete(String(id));
+    }
+    updateMoveDressesButton();
+    applySearchFilter();
+};
+
+btnMoveDresses.addEventListener('click', async () => {
+    if (selectedIds.size === 0) return;
+
+    const count = selectedIds.size;
+    if (!confirm(`¿Mover ${count} artículo(s) de regreso a VESTIDOS?\n\nVolverán a aparecer en el catálogo principal y en el panel de rentas.`)) {
+        return;
+    }
+
+    btnMoveDresses.disabled = true;
+    btnMoveDresses.innerText = 'Moviendo a Vestidos...';
+
+    try {
+        const res = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: 'moveToDresses',
+                ids: Array.from(selectedIds)
+            })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'No se pudieron mover los artículos.');
+
+        alert(`¡${data.moved} artículo(s) movido(s) de regreso a Vestidos!`);
+
+        isSelectionMode = false;
+        selectedIds.clear();
+        btnToggleSelect.classList.remove('active');
+        btnToggleSelect.innerText = '☑️ Seleccionar';
+        updateMoveDressesButton();
+        loadSales();
+    } catch (err) {
+        console.error(err);
+        alert('Error al mover a vestidos: ' + err.message);
+    } finally {
+        btnMoveDresses.disabled = false;
+        updateMoveDressesButton();
+    }
+});
 
 // --- CARGAR ARTÍCULOS DE LA PESTAÑA "VENTAS" ---
 async function loadSales() {
@@ -98,7 +232,7 @@ clearSearchBtn.addEventListener('click', () => {
     searchInput.focus();
 });
 
-// --- RENDERIZAR LISTA (SOLO EDITAR Y ELIMINAR) ---
+// --- RENDERIZAR LISTA ---
 function renderSales(list, isFiltered) {
     const listEl = document.getElementById('sales-list');
     const countEl = document.getElementById('count-sales');
@@ -116,13 +250,20 @@ function renderSales(list, isFiltered) {
         const thumb = d.images[0] || 'img/proximamente.png';
         const safeName = d.name.replace(/'/g, "\\'");
 
+        const isSelected = selectedIds.has(String(d.id));
+        const disabledAttr = isSelectionMode ? 'disabled' : '';
+        const checkboxHtml = isSelectionMode
+            ? `<input type="checkbox" class="dress-select-check" ${isSelected ? 'checked' : ''} onchange="toggleSaleSelection('${d.id}', this.checked)">`
+            : '';
+
         const stLow = d.status.toLowerCase();
         let badgeClass = 'status-venta';
         if (stLow.includes('vendido')) badgeClass = 'status-vendido';
         else if (stLow.includes('apartado')) badgeClass = 'status-apartado';
 
         return `
-            <div class="dress-row">
+            <div class="dress-row ${isSelected ? 'selected-row' : ''}">
+                ${checkboxHtml}
                 <img src="${thumb}" alt="${d.name}" loading="lazy">
                 <div class="dress-meta">
                     <h3>${d.name} <span class="dress-id">(ID: ${d.id})</span></h3>
@@ -135,8 +276,8 @@ function renderSales(list, isFiltered) {
                     ${d.comments ? `<p><strong>Notas:</strong> ${d.comments}</p>` : ''}
                 </div>
                 <div class="dress-actions">
-                    <button class="btn btn-edit" onclick="startEdit('${d.id}')">✏️ Editar</button>
-                    <button class="btn btn-delete" onclick="deleteSale('${d.id}', '${safeName}')">🗑️ Eliminar</button>
+                    <button class="btn btn-edit" ${disabledAttr} onclick="startEdit('${d.id}')">✏️ Editar</button>
+                    <button class="btn btn-delete" ${disabledAttr} onclick="deleteSale('${d.id}', '${safeName}')">🗑️ Eliminar</button>
                 </div>
             </div>
         `;
@@ -313,3 +454,10 @@ window.deleteSale = async function(id, name) {
         alert('Error al eliminar: ' + err.message);
     }
 };
+
+// Verificar sesión activa al entrar a Ventas
+setTimeout(() => {
+    if (isSessionValid()) {
+        unlockSales();
+    }
+}, 0);
