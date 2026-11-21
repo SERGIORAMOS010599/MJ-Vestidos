@@ -1208,23 +1208,16 @@ input, select {
 
 /* --- SECCIÓN: LOS MÁS RENTADOS (TOP 20 EN CUADRÍCULA) --- */
 .top-rented-section {
-    padding: 55px 5% 30px 5%;
     background-color: #faf8f3;
     border-bottom: 1px solid #ece6d8;
-    text-align: center;
-}
-
-.top-rented-section h2 {
-    font-family: 'Playfair Display', serif;
-    font-size: 2.1rem;
-    color: #111;
-    margin-bottom: 8px;
+    padding-bottom: 40px;
 }
 
 .top-rented-subtitle {
+    text-align: center;
     font-size: 0.92rem;
     color: #666;
-    margin-bottom: 26px;
+    margin: -10px 0 28px 0;
 }
 
 .top-rented-section .dress-card {
