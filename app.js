@@ -275,29 +275,6 @@ class Catalog {
         }
     }
 
-    // =========================================
-    // --- SECCIÓN: LOS MÁS RENTADOS (TOP 20) ---
-    // =========================================
-    renderTopRented() {
-        const section = document.getElementById('mas-rentados');
-        const track = document.getElementById('top-rented-container');
-        if (!section || !track || IS_SALES_CATALOG) return;
-
-        const top20 = [...this.allDresses]
-            .filter(d => d.totalRentals > 0)
-            .sort((a, b) => b.totalRentals - a.totalRentals)
-            .slice(0, 20);
-
-        if (top20.length === 0) {
-            section.style.display = 'none';
-            return;
-        }
-
-        section.style.display = 'block';
-        track.innerHTML = top20
-            .map((dress, idx) => dress.generateCardHTML(idx + 1))
-            .join('');
-    }
 
     // =========================================
     // --- PASARELA CINEMATOGRÁFICA DE PORTADA ---
