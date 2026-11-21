@@ -1195,3 +1195,69 @@ input, select {
         width: 190px;
     }
 }
+/* --- MENÚ SUPERIOR (ACTIVO Y RESPONSIVE) --- */
+.navbar nav ul {
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.navbar nav ul li a.nav-active {
+    color: #d4af37;
+    font-weight: 600;
+}
+
+/* --- SECCIÓN: LOS MÁS RENTADOS (TOP 20) --- */
+.top-rented-section {
+    padding: 55px 5% 15px 5%;
+    background-color: #faf8f3;
+    border-bottom: 1px solid #ece6d8;
+    text-align: center;
+}
+
+.top-rented-section h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.1rem;
+    color: #111;
+    margin-bottom: 8px;
+}
+
+.top-rented-subtitle {
+    font-size: 0.92rem;
+    color: #666;
+    margin-bottom: 22px;
+}
+
+.top-rented-track {
+    display: flex;
+    gap: 22px;
+    overflow-x: auto;
+    padding: 10px 4px 22px 4px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+    scrollbar-color: #d4af37 #eee;
+}
+
+.top-rented-track .dress-card {
+    min-width: 260px;
+    max-width: 260px;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    position: relative;
+}
+
+.rank-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 3;
+    background: #111;
+    color: #d4af37;
+    border: 1.5px solid #d4af37;
+    padding: 4px 11px;
+    border-radius: 20px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+}
