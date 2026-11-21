@@ -15,7 +15,8 @@
             <ul>
                 <li><a href="#inicio">Inicio</a></li>
                 <li><a href="#catalogo">Catálogo</a></li>
-                <li><a href="#contacto">Contacto</a></li>
+                <li><a href="en-venta.html">Vestidos en Venta</a></li>
+                <li><a href="#" id="nav-agenda-cita">Agenda tu Cita</a></li>
             </ul>
         </nav>
     </header>
@@ -32,7 +33,12 @@
             <a href="#catalogo" class="btn-primary">Ver Colección</a>
         </div>
     </section>
-
+    <section id="mas-rentados" class="top-rented-section" style="display: none;">
+        <h2>Los Más Rentados</h2>
+        <div class="divider"></div>
+        <p class="top-rented-subtitle">Los favoritos de nuestras clientas — Top 20 actualizado automáticamente</p>
+        <div id="top-rented-container" class="top-rented-track"></div>
+    </section>
     <section id="catalogo" class="catalog-section">
         <h2>Nuestra Colección</h2>
         <div class="divider"></div>
@@ -172,6 +178,7 @@
             <div>
                 <div class="filter-group-title">Ordenar por</div>
                 <div class="filter-options-wrap">
+                    <button type="button" class="filter-chip" data-sort="popular">Los más rentados</button>
                     <button type="button" class="filter-chip" data-sort="asc">Precio Ascendente</button>
                     <button type="button" class="filter-chip" data-sort="desc">Precio Descendente</button>
                 </div>
@@ -262,6 +269,6 @@
         </div>
     </div>
 
-    <script src="app.js?v=2"></script>
+    <script src="app.js?v=3"></script>
 </body>
 </html>
