@@ -655,7 +655,60 @@
                 `;
             }).join('');
         }
+        // --- SELECTOR DE TALLAS CON BOTONES ---
+        const dSizeButtons = Array.from(document.querySelectorAll('#d-size-selector .form-size-btn'));
+        const dSizeCustom = document.getElementById('d-size-custom');
+        const dSizeHidden = document.getElementById('d-size');
 
+        function syncAdminSizes() {
+            const selected = dSizeButtons
+                .filter(btn => btn.classList.contains('active'))
+                .map(btn => btn.dataset.size);
+            const customVal = dSizeCustom.value.trim();
+            if (customVal) {
+                customVal.split(/[,\-]+/).map(s => s.trim()).filter(Boolean).forEach(s => {
+                    if (!selected.includes(s)) selected.push(s);
+                });
+            }
+            dSizeHidden.value = selected.join(', ');
+        }
+
+        function setAdminFormSizes(sizeStr) {
+            dSizeButtons.forEach(b => b.classList.remove('active'));
+            dSizeCustom.value = '';
+            const customs = [];
+
+            String(sizeStr || '').split(/[,\-]+/).map(s => s.trim()).filter(Boolean).forEach(sz => {
+                const match = dSizeButtons.find(b => b.dataset.size.toUpperCase() === sz.toUpperCase());
+                if (match) match.classList.add('active');
+                else customs.push(sz);
+            });
+
+            dSizeCustom.value = customs.join(', ');
+            syncAdminSizes();
+        }
+
+        dSizeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const isEditing = Boolean(document.getElementById('edit-id').value);
+                if (isEditing) {
+                    dSizeButtons.forEach(b => b.classList.remove('active'));
+                    dSizeCustom.value = '';
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.toggle('active');
+                }
+                syncAdminSizes();
+            });
+        });
+
+        dSizeCustom.addEventListener('input', () => {
+            const isEditing = Boolean(document.getElementById('edit-id').value);
+            if (isEditing && dSizeCustom.value.trim()) {
+                dSizeButtons.forEach(b => b.classList.remove('active'));
+            }
+            syncAdminSizes();
+        });
         // --- CREAR / EDITAR ARTÍCULO ---
         window.startEdit = function(id) {
             const d = allDresses.find(item => String(item.id) === String(id));
@@ -666,7 +719,7 @@
             document.getElementById('d-type').value = d.type;
             document.getElementById('d-name').value = d.name;
             document.getElementById('d-color').value = d.color;
-            document.getElementById('d-size').value = d.size;
+            setAdminFormSizes(d.size);
             document.getElementById('d-price').value = d.price;
             document.getElementById('d-deposit').value = d.deposit;
 
@@ -714,6 +767,7 @@
 
         function resetForm() {
             document.getElementById('dress-form').reset();
+            setAdminFormSizes('');
             document.getElementById('edit-id').value = '';
             document.getElementById('d-type').value = 'Vestido';
             document.getElementById('d-status').value = 'Disponible';
@@ -732,7 +786,12 @@
             const type = document.getElementById('d-type').value.trim();
             const name = document.getElementById('d-name').value.trim();
             const color = document.getElementById('d-color').value.trim();
+            syncAdminSizes();
             const size = document.getElementById('d-size').value.trim();
+            if (!size) {
+                alert('Por favor, selecciona al menos una talla.');
+                return;
+            }
             const price = document.getElementById('d-price').value;
             const deposit = document.getElementById('d-deposit').value;
             const status = document.getElementById('d-status').value;
