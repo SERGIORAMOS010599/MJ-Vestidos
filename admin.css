@@ -776,3 +776,93 @@ body {
         max-width: 100%;
     }
 }
+/* --- NAVEGACIÓN HEADER (VENTAS + VER CATÁLOGO) --- */
+.header-nav {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.header-nav a.btn-nav-sales {
+    background: #d4af37;
+    color: #111;
+}
+
+.header-nav a.btn-nav-sales:hover {
+    background: #c09b28;
+}
+
+/* --- HERRAMIENTAS DE INVENTARIO (MOVER A VENTAS + SELECCIONAR + BUSCADOR) --- */
+.inventory-tools {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    flex: 1;
+    justify-content: flex-end;
+}
+
+.inventory-tools .search-wrapper {
+    max-width: 320px;
+}
+
+.btn-select-mode {
+    background: #111;
+    color: #d4af37;
+    border: 1px solid #d4af37;
+    padding: 9px 16px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.btn-select-mode:hover {
+    background: #2b2b2b;
+}
+
+.btn-select-mode.active {
+    background: #e5e5e5;
+    color: #111;
+    border-color: #bbb;
+}
+
+.btn-move-sales {
+    display: none;
+    background: #d4af37;
+    color: #111;
+    border: 1px solid #b89122;
+    padding: 9px 16px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.btn-move-sales:hover:not(:disabled) {
+    background: #c09b28;
+}
+
+/* --- CHECKBOX Y FILA SELECCIONADA --- */
+.dress-select-check {
+    width: 20px;
+    height: 20px;
+    margin-top: 32px;
+    accent-color: #111;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.dress-row.selected-row {
+    background: #fdf9ec;
+    border-color: #d4af37;
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.25);
+}
+
+@media (max-width: 780px) {
+    .inventory-tools {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .inventory-tools .search-wrapper {
+        max-width: 100%;
+    }
+}
