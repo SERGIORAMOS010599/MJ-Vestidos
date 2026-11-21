@@ -221,6 +221,8 @@ class Catalog {
 
             this.buildFilterOptions();
             this.applyFilters(false);
+            this.initHeroRunway();
+            
         } catch (error) {
             console.error("Error cargando la base de datos:", error);
             this.container.innerHTML = '<p style="text-align:center; width:100%; color:red;">No se pudo cargar el catálogo. Verifica tu conexión.</p>';
