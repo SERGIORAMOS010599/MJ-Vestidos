@@ -26,77 +26,41 @@
     </header>
 
     <div class="container">
-        <!-- FORMULARIO CREAR / EDITAR -->
+        <!-- CALENDARIO DE CITAS AGENDADAS -->
         <div class="card">
-            <h2 id="form-title" class="card-title">Agregar Nuevo Artículo</h2>
-            <form id="dress-form">
-                <input type="hidden" id="edit-id">
+            <div class="calendar-card-header">
+                <h2>📅 Agenda de Citas</h2>
+                <div class="cal-header-actions">
+                    <button type="button" id="btn-cal-today" class="btn-cal-mini">Hoy</button>
+                    <button type="button" id="btn-refresh-citas" class="btn-cal-mini">🔄 Actualizar Citas</button>
+                </div>
+            </div>
 
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="d-type">Tipo de Artículo *</label>
-                        <input type="text" id="d-type" placeholder="Ej. Vestido, Accesorio, Bolsa" value="Vestido" required>
+            <div class="admin-cal-grid">
+                <!-- Columna Izquierda: Calendario mensual -->
+                <div class="admin-cal-box">
+                    <div class="cal-nav">
+                        <button type="button" id="admin-cal-prev">&lsaquo;</button>
+                        <span id="admin-cal-month-label" class="cal-month-label">Noviembre 2026</span>
+                        <button type="button" id="admin-cal-next">&rsaquo;</button>
                     </div>
-                    <div class="form-group">
-                        <label for="d-name">Nombre del Artículo *</label>
-                        <input type="text" id="d-name" placeholder="Ej. Rojo Mangas" required>
+                    <div class="cal-weekdays">
+                        <span>LUN</span><span>MAR</span><span>MIÉ</span><span>JUE</span><span>VIE</span><span>SÁB</span><span>DOM</span>
                     </div>
-                    <div class="form-group">
-                        <label for="d-color">Color *</label>
-                        <input type="text" id="d-color" placeholder="Ej. Rojo" required>
-                    </div>
-                    <div class="form-group full">
-                        <label>Talla(s) * <small>(haz clic para seleccionar una o varias)</small></label>
-                        <div class="form-size-selector" id="d-size-selector">
-                            <button type="button" class="form-size-btn" data-size="XXS">XXS</button>
-                            <button type="button" class="form-size-btn" data-size="XS">XS</button>
-                            <button type="button" class="form-size-btn" data-size="S">S</button>
-                            <button type="button" class="form-size-btn" data-size="M">M</button>
-                            <button type="button" class="form-size-btn" data-size="L">L</button>
-                            <button type="button" class="form-size-btn" data-size="XL">XL</button>
-                            <button type="button" class="form-size-btn" data-size="XXL">XXL</button>
-                            <button type="button" class="form-size-btn" data-size="Única">Única</button>
-                            <input type="text" id="d-size-custom" class="custom-size-input" placeholder="Otra (ej. 4, 6)">
-                        </div>
-                        <input type="hidden" id="d-size">
-                    </div>
-                    <div class="form-group">
-                        <label for="d-price">Precio de Renta / noche (MXN) *</label>
-                        <input type="number" id="d-price" placeholder="450" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="d-deposit">Depósito Reembolsable (MXN) *</label>
-                        <input type="number" id="d-deposit" placeholder="200" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="d-status">Estado del Producto *</label>
-                        <select id="d-status" required>
-                            <option value="Disponible">Disponible</option>
-                            <option value="Rentado">Rentado</option>
-                            <option value="SACAR DE INVENTARIO">SACAR DE INVENTARIO</option>
-                        </select>
-                    </div>
-                    <div class="form-group full">
-                        <label for="d-comments">Extra / Comentarios</label>
-                        <textarea id="d-comments" placeholder="Detalles de la tela, corte, notas adicionales..."></textarea>
-                    </div>
-
-                    <div class="form-group full hidden-block" id="existing-images-block">
-                        <label>Fotos actuales (haz clic en X para quitar alguna):</label>
-                        <div class="current-images" id="current-images-container"></div>
-                    </div>
-
-                    <div class="form-group full">
-                        <label for="d-photos">Subir Foto(s) del Artículo <small>(puedes elegir varias a la vez)</small></label>
-                        <input type="file" id="d-photos" accept="image/*" multiple>
-                    </div>
+                    <div id="admin-cal-days" class="cal-days-grid"></div>
                 </div>
 
-                <div class="btn-row">
-                    <button type="submit" id="btn-save" class="btn btn-gold">Guardar Artículo</button>
-                    <button type="button" id="btn-cancel" class="btn btn-cancel">Cancelar Edición</button>
+                <!-- Columna Derecha: Citas del día seleccionado -->
+                <div class="agenda-panel">
+                    <div class="agenda-day-title">
+                        <span id="agenda-selected-date-label">Citas de hoy</span>
+                        <span id="agenda-count-pill" class="agenda-count-pill">0 citas</span>
+                    </div>
+                    <div id="agenda-list" class="agenda-list">
+                        <p class="status-msg">Cargando citas...</p>
+                    </div>
                 </div>
-            </form>
+            </div>
         </div>
 
         <!-- INVENTARIO ACTUAL + SELECCIÓN + BUSCADOR -->
@@ -122,6 +86,93 @@
             <div id="inventory-list" class="inventory-list">
                 <p class="status-msg">Cargando inventario...</p>
             </div>
+        </div>
+    </div>
+
+    <!-- BOTÓN FLOTANTE "+" PARA AGREGAR NUEVO ARTÍCULO -->
+    <button type="button" id="fab-add-dress" class="fab-add-dress" title="Agregar Nuevo Artículo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+    </button>
+
+    <!-- MODAL AGREGAR / EDITAR ARTÍCULO -->
+    <div id="dress-form-modal" class="admin-modal">
+        <div class="admin-modal-content dress-form-modal-content">
+            <span class="modal-close" id="close-dress-form-modal">&times;</span>
+            <h2 id="form-title" class="card-title">Agregar Nuevo Artículo</h2>
+
+            <form id="dress-form">
+                <input type="hidden" id="edit-id">
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="d-type">Tipo de Artículo *</label>
+                        <input type="text" id="d-type" placeholder="Ej. Vestido, Accesorio, Bolsa" value="Vestido" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="d-name">Nombre del Artículo *</label>
+                        <input type="text" id="d-name" placeholder="Ej. Rojo Mangas" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="d-color">Color *</label>
+                        <input type="text" id="d-color" placeholder="Ej. Rojo" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="d-price">Precio de Renta / noche (MXN) *</label>
+                        <input type="number" id="d-price" placeholder="450" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="d-deposit">Depósito Reembolsable (MXN) *</label>
+                        <input type="number" id="d-deposit" placeholder="200" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="d-status">Estado del Producto *</label>
+                        <select id="d-status" required>
+                            <option value="Disponible">Disponible</option>
+                            <option value="Rentado">Rentado</option>
+                            <option value="SACAR DE INVENTARIO">SACAR DE INVENTARIO</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group full">
+                        <label>Talla(s) * <small>(haz clic para seleccionar una o varias)</small></label>
+                        <div class="form-size-selector" id="d-size-selector">
+                            <button type="button" class="form-size-btn" data-size="XXS">XXS</button>
+                            <button type="button" class="form-size-btn" data-size="XS">XS</button>
+                            <button type="button" class="form-size-btn" data-size="S">S</button>
+                            <button type="button" class="form-size-btn" data-size="M">M</button>
+                            <button type="button" class="form-size-btn" data-size="L">L</button>
+                            <button type="button" class="form-size-btn" data-size="XL">XL</button>
+                            <button type="button" class="form-size-btn" data-size="XXL">XXL</button>
+                            <button type="button" class="form-size-btn" data-size="Única">Única</button>
+                            <input type="text" id="d-size-custom" class="custom-size-input" placeholder="Otra (ej. 4, 6)">
+                        </div>
+                        <input type="hidden" id="d-size">
+                    </div>
+
+                    <div class="form-group full">
+                        <label for="d-comments">Extra / Comentarios</label>
+                        <textarea id="d-comments" placeholder="Detalles de la tela, corte, notas adicionales..."></textarea>
+                    </div>
+
+                    <div class="form-group full hidden-block" id="existing-images-block">
+                        <label>Fotos actuales (haz clic en X para quitar alguna):</label>
+                        <div class="current-images" id="current-images-container"></div>
+                    </div>
+
+                    <div class="form-group full">
+                        <label for="d-photos">Subir Foto(s) del Artículo <small>(puedes elegir varias a la vez)</small></label>
+                        <input type="file" id="d-photos" accept="image/*" multiple>
+                    </div>
+                </div>
+
+                <div class="btn-row">
+                    <button type="submit" id="btn-save" class="btn btn-gold">Guardar Artículo</button>
+                    <button type="button" id="btn-cancel" class="btn btn-cancel" style="display:inline-block;">Cancelar</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -231,6 +282,7 @@
 
         // --- ESTADO GLOBAL ---
         let allDresses = [];
+        let allAppointments = [];
         let keptImages = [];
         let currentRentDress = null;
         let currentReleaseDress = null;
@@ -238,6 +290,11 @@
         let selectedIds = new Set();
         let sessionInterval = null;
         let lastWriteTime = 0;
+
+        // Estado del calendario de citas
+        let calYear = 2026;
+        let calMonth = 0;
+        let selectedCalDate = '';
 
         // --- REFERENCIAS DOM ---
         const authOverlay = document.getElementById('auth-overlay');
@@ -247,11 +304,57 @@
         const clearSearchBtn = document.getElementById('clear-search');
         const btnToggleSelect = document.getElementById('btn-toggle-select');
         const btnMoveSales = document.getElementById('btn-move-sales');
+        const dressFormModal = document.getElementById('dress-form-modal');
         const rentModal = document.getElementById('rent-modal');
         const closeRentBtn = document.getElementById('close-rent-modal');
         const rentStartInput = document.getElementById('r-start-date');
         const rentEndInput = document.getElementById('r-end-date');
         const releaseModal = document.getElementById('release-modal');
+
+        // --- UTILIDADES DE FECHA (HERMOSILLO) ---
+        function getHermosilloTodayStr() {
+            const parts = new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'America/Hermosillo',
+                year: 'numeric', month: '2-digit', day: '2-digit'
+            }).formatToParts(new Date());
+            const y = parts.find(p => p.type === 'year').value;
+            const m = parts.find(p => p.type === 'month').value;
+            const d = parts.find(p => p.type === 'day').value;
+            return `${y}-${m}-${d}`;
+        }
+
+        function initCalendarDate() {
+            selectedCalDate = getHermosilloTodayStr();
+            const [y, m] = selectedCalDate.split('-').map(Number);
+            calYear = y;
+            calMonth = m - 1;
+        }
+        initCalendarDate();
+
+        function parseTime12hToMinutes(timeStr) {
+            const m = String(timeStr || '').trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+            if (!m) return 9999;
+            let h = parseInt(m[1], 10);
+            const min = parseInt(m[2], 10);
+            const ampm = m[3].toUpperCase();
+            if (ampm === 'PM' && h !== 12) h += 12;
+            if (ampm === 'AM' && h === 12) h = 0;
+            return h * 60 + min;
+        }
+
+        function parseSheetDateCell(cell) {
+            if (!cell || !cell.v) return '';
+            const raw = String(cell.v).trim();
+            // Formato Date(YYYY, M, D) de Google Visualization
+            const dateMatch = raw.match(/^Date\((\d+),(\d+),(\d+)/);
+            if (dateMatch) {
+                const y = dateMatch[1];
+                const m = String(Number(dateMatch[2]) + 1).padStart(2, '0');
+                const d = String(Number(dateMatch[3])).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            }
+            return raw.replace(/^'/, '');
+        }
 
         // --- SESIÓN COMPARTIDA (1 HORA DE INACTIVIDAD) ---
         function isSessionValid() {
@@ -296,6 +399,7 @@
             lastWriteTime = now;
             authOverlay.style.display = 'none';
             startSessionMonitor();
+            loadAppointments();
             loadInventory();
         }
 
@@ -313,7 +417,195 @@
         });
         pinInput.addEventListener('keypress', e => { if (e.key === 'Enter') btnUnlock.click(); });
 
-        // --- UTILIDADES ---
+        // =========================================
+        // --- CALENDARIO Y AGENDA DE CITAS ---
+        // =========================================
+        async function loadAppointments() {
+            const listEl = document.getElementById('agenda-list');
+            listEl.innerHTML = '<p class="status-msg">Cargando citas...</p>';
+
+            try {
+                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=CITAS&tqx=out:json&t=${Date.now()}`;
+                const res = await fetch(url);
+                const text = await res.text();
+                const json = JSON.parse(text.substring(47).slice(0, -2));
+                const rows = (json.table && json.table.rows) ? json.table.rows : [];
+
+                allAppointments = [];
+                rows.forEach(row => {
+                    const idVal = row && row.c && row.c[0] && row.c[0].v ? String(row.c[0].v).trim() : '';
+                    if (idVal && idVal.toUpperCase() !== 'ID_CITA' && idVal.toUpperCase() !== 'ID') {
+                        allAppointments.push({
+                            id: idVal,
+                            date: parseSheetDateCell(row.c[1]),
+                            time: row.c[2] && row.c[2].v ? String(row.c[2].v).trim() : '',
+                            client: row.c[3] && row.c[3].v ? String(row.c[3].v).trim() : 'Sin nombre',
+                            phone: row.c[4] && row.c[4].v ? String(row.c[4].v).trim() : '',
+                            dress: row.c[5] && row.c[5].v ? String(row.c[5].v).trim() : 'Consulta general',
+                            status: row.c[6] && row.c[6].v ? String(row.c[6].v).trim() : 'Confirmada'
+                        });
+                    }
+                });
+
+                renderAdminCalendar();
+                renderAgendaForSelectedDay();
+            } catch (err) {
+                console.error(err);
+                listEl.innerHTML = '<p class="status-msg error">No se pudieron cargar las citas. Verifica que exista la pestaña CITAS.</p>';
+            }
+        }
+
+        function renderAdminCalendar() {
+            const monthDate = new Date(calYear, calMonth, 1);
+            document.getElementById('admin-cal-month-label').innerText = monthDate.toLocaleDateString('es-MX', {
+                month: 'long', year: 'numeric'
+            });
+
+            const grid = document.getElementById('admin-cal-days');
+            grid.innerHTML = '';
+
+            let startDay = monthDate.getDay() - 1;
+            if (startDay < 0) startDay = 6;
+            for (let i = 0; i < startDay; i++) {
+                grid.appendChild(document.createElement('span'));
+            }
+
+            const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+            const todayStr = getHermosilloTodayStr();
+
+            // Días que tienen al menos una cita no cancelada
+            const datesWithCitas = new Set(
+                allAppointments
+                    .filter(c => c.status.toLowerCase() !== 'cancelada')
+                    .map(c => c.date)
+            );
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'cal-day-btn';
+                if (dateStr === todayStr) btn.classList.add('today');
+                if (dateStr === selectedCalDate) btn.classList.add('selected');
+
+                btn.innerHTML = `<span>${day}</span>${datesWithCitas.has(dateStr) ? '<span class="cal-day-dot"></span>' : ''}`;
+                btn.onclick = () => {
+                    selectedCalDate = dateStr;
+                    renderAdminCalendar();
+                    renderAgendaForSelectedDay();
+                };
+                grid.appendChild(btn);
+            }
+        }
+
+        function renderAgendaForSelectedDay() {
+            const [y, m, d] = selectedCalDate.split('-').map(Number);
+            const prettyDate = new Date(y, m - 1, d).toLocaleDateString('es-MX', {
+                weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+            });
+            document.getElementById('agenda-selected-date-label').innerText = prettyDate;
+
+            const dayCitas = allAppointments
+                .filter(c => c.date === selectedCalDate)
+                .sort((a, b) => parseTime12hToMinutes(a.time) - parseTime12hToMinutes(b.time));
+
+            const countPill = document.getElementById('agenda-count-pill');
+            countPill.innerText = `${dayCitas.length} ${dayCitas.length === 1 ? 'cita' : 'citas'}`;
+
+            const listEl = document.getElementById('agenda-list');
+            if (dayCitas.length === 0) {
+                listEl.innerHTML = '<p class="status-msg">No hay citas agendadas para este día.</p>';
+                return;
+            }
+
+            listEl.innerHTML = dayCitas.map(c => {
+                const stLow = c.status.toLowerCase();
+                let itemClass = '';
+                let badgeClass = 'status-custom';
+                if (stLow === 'atendida') { itemClass = 'status-atendida'; badgeClass = 'status-disponible'; }
+                else if (stLow === 'cancelada') { itemClass = 'status-cancelada'; badgeClass = 'status-rentado'; }
+
+                const cleanPhone = c.phone.replace(/\D/g, '');
+                const waPhone = cleanPhone.length === 10 ? `52${cleanPhone}` : cleanPhone;
+                const phoneHtml = cleanPhone
+                    ? `<a href="https://wa.me/${waPhone}" target="_blank" class="cita-phone-link">📲 ${c.phone}</a>`
+                    : 'Sin teléfono';
+
+                return `
+                    <div class="cita-item ${itemClass}">
+                        <div class="cita-item-info">
+                            <div class="cita-time-row">
+                                <span class="cita-time-badge">${c.time}</span>
+                                <strong>${c.client}</strong>
+                                <span class="status-badge ${badgeClass}">${c.status}</span>
+                            </div>
+                            <div><strong>Vestido de interés:</strong> ${c.dress}</div>
+                            <div><strong>Contacto:</strong> ${phoneHtml}</div>
+                        </div>
+                        <div class="cita-item-actions">
+                            ${stLow !== 'atendida' ? `<button type="button" class="btn btn-available" onclick="updateCitaStatus('${c.id}', 'Atendida')">✅ Atendida</button>` : ''}
+                            ${stLow !== 'cancelada' ? `<button type="button" class="btn btn-edit" onclick="updateCitaStatus('${c.id}', 'Cancelada')">✖️ Cancelar</button>` : ''}
+                            <button type="button" class="btn btn-delete" title="Eliminar cita" onclick="deleteCita('${c.id}')">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        document.getElementById('admin-cal-prev').addEventListener('click', () => {
+            calMonth--;
+            if (calMonth < 0) { calMonth = 11; calYear--; }
+            renderAdminCalendar();
+        });
+
+        document.getElementById('admin-cal-next').addEventListener('click', () => {
+            calMonth++;
+            if (calMonth > 11) { calMonth = 0; calYear++; }
+            renderAdminCalendar();
+        });
+
+        document.getElementById('btn-cal-today').addEventListener('click', () => {
+            initCalendarDate();
+            renderAdminCalendar();
+            renderAgendaForSelectedDay();
+        });
+
+        document.getElementById('btn-refresh-citas').addEventListener('click', loadAppointments);
+
+        window.updateCitaStatus = async function(citaId, newStatus) {
+            try {
+                const res = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'updateAppointmentStatus',
+                        id: citaId,
+                        status: newStatus
+                    })
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || 'No se pudo actualizar la cita.');
+                loadAppointments();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        };
+
+        window.deleteCita = async function(citaId) {
+            if (!confirm('¿Eliminar esta cita permanentemente?')) return;
+            try {
+                const res = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'deleteAppointment', id: citaId })
+                });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.error || 'No se pudo eliminar la cita.');
+                loadAppointments();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        };
+
+        // --- UTILIDADES GENERALES ---
         function normalizeText(str) {
             return String(str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         }
@@ -416,7 +708,6 @@
                     }
                 });
 
-                // Ordenar de talla más chica a más grande (y alfabéticamente dentro de cada talla)
                 allDresses.sort((a, b) => {
                     const rankDiff = getSizeRank(a.size) - getSizeRank(b.size);
                     if (rankDiff !== 0) return rankDiff;
@@ -485,11 +776,8 @@
         });
 
         window.toggleDressSelection = function(id, isChecked) {
-            if (isChecked) {
-                selectedIds.add(String(id));
-            } else {
-                selectedIds.delete(String(id));
-            }
+            if (isChecked) selectedIds.add(String(id));
+            else selectedIds.delete(String(id));
             updateMoveSalesButton();
             applySearchFilter();
         };
@@ -655,7 +943,10 @@
                 `;
             }).join('');
         }
-        // --- SELECTOR DE TALLAS CON BOTONES ---
+
+        // ===================================================
+        // --- MODAL DE AGREGAR / EDITAR ARTÍCULO + TALLAS ---
+        // ===================================================
         const dSizeButtons = Array.from(document.querySelectorAll('#d-size-selector .form-size-btn'));
         const dSizeCustom = document.getElementById('d-size-custom');
         const dSizeHidden = document.getElementById('d-size');
@@ -709,7 +1000,26 @@
             }
             syncAdminSizes();
         });
-        // --- CREAR / EDITAR ARTÍCULO ---
+
+        function openDressFormModal() {
+            dressFormModal.style.display = 'block';
+        }
+
+        function closeDressFormModal() {
+            dressFormModal.style.display = 'none';
+            resetForm();
+        }
+
+        document.getElementById('fab-add-dress').addEventListener('click', () => {
+            resetForm();
+            openDressFormModal();
+        });
+        document.getElementById('close-dress-form-modal').addEventListener('click', closeDressFormModal);
+        document.getElementById('btn-cancel').addEventListener('click', closeDressFormModal);
+        window.addEventListener('click', (e) => {
+            if (e.target === dressFormModal) closeDressFormModal();
+        });
+
         window.startEdit = function(id) {
             const d = allDresses.find(item => String(item.id) === String(id));
             if (!d) return;
@@ -719,19 +1029,15 @@
             document.getElementById('d-type').value = d.type;
             document.getElementById('d-name').value = d.name;
             document.getElementById('d-color').value = d.color;
-            setAdminFormSizes(d.size);
             document.getElementById('d-price').value = d.price;
             document.getElementById('d-deposit').value = d.deposit;
 
             const statusSelect = document.getElementById('d-status');
-            if (d.status.toUpperCase() === 'SACAR DE INVENTARIO') {
-                statusSelect.value = 'SACAR DE INVENTARIO';
-            } else if (d.status.toLowerCase().includes('rentado')) {
-                statusSelect.value = 'Rentado';
-            } else {
-                statusSelect.value = 'Disponible';
-            }
+            if (d.status.toUpperCase() === 'SACAR DE INVENTARIO') statusSelect.value = 'SACAR DE INVENTARIO';
+            else if (d.status.toLowerCase().includes('rentado')) statusSelect.value = 'Rentado';
+            else statusSelect.value = 'Disponible';
 
+            setAdminFormSizes(d.size);
             document.getElementById('d-comments').value = d.comments;
             document.getElementById('d-photos').value = '';
 
@@ -739,8 +1045,7 @@
             renderKeptImages();
 
             document.getElementById('btn-save').innerText = 'Actualizar Artículo';
-            document.getElementById('btn-cancel').style.display = 'inline-block';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            openDressFormModal();
         };
 
         function renderKeptImages() {
@@ -773,25 +1078,24 @@
             document.getElementById('d-status').value = 'Disponible';
             document.getElementById('form-title').innerText = 'Agregar Nuevo Artículo';
             document.getElementById('btn-save').innerText = 'Guardar Artículo';
-            document.getElementById('btn-cancel').style.display = 'none';
             keptImages = [];
             renderKeptImages();
         }
-        document.getElementById('btn-cancel').addEventListener('click', resetForm);
 
         document.getElementById('dress-form').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const editId = document.getElementById('edit-id').value;
-            const type = document.getElementById('d-type').value.trim();
-            const name = document.getElementById('d-name').value.trim();
-            const color = document.getElementById('d-color').value.trim();
             syncAdminSizes();
             const size = document.getElementById('d-size').value.trim();
             if (!size) {
                 alert('Por favor, selecciona al menos una talla.');
                 return;
             }
+
+            const editId = document.getElementById('edit-id').value;
+            const type = document.getElementById('d-type').value.trim();
+            const name = document.getElementById('d-name').value.trim();
+            const color = document.getElementById('d-color').value.trim();
             const price = document.getElementById('d-price').value;
             const deposit = document.getElementById('d-deposit').value;
             const status = document.getElementById('d-status').value;
@@ -842,7 +1146,7 @@
                 if (!data.success) throw new Error(data.error || 'Error al guardar en Sheets');
 
                 alert(editId ? '¡Artículo actualizado correctamente!' : '¡Artículo agregado al catálogo!');
-                resetForm();
+                closeDressFormModal();
                 loadInventory();
 
             } catch (err) {
