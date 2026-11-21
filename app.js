@@ -493,6 +493,7 @@ class Catalog {
         if (btnApply) btnApply.innerText = `Ver ${result.length} artículos`;
 
         const hasActive = Boolean(sort || sizes.size > 0 || colors.size > 0 || minPrice > absMinPrice || maxPrice < absMaxPrice);
+        this.hasActiveFiltersFlag = hasActive;
         const dot = document.getElementById('filter-active-dot');
         if (dot) dot.style.display = hasActive ? 'block' : 'none';
 
@@ -503,8 +504,46 @@ class Catalog {
     // =========================================
     // --- RENDER Y PAGINACIÓN ---
     // =========================================
+   getPaginationState() {
+        const isSplitView = !IS_SALES_CATALOG && !this.hasActiveFiltersFlag && this.topRentedDresses.length > 0;
+        if (!isSplitView) {
+            const totalPages = Math.max(1, Math.ceil(this.filteredDresses.length / this.itemsPerPage));
+            return {
+                isSplitView: false,
+                totalPages,
+                regularDresses: this.filteredDresses,
+                page1RegularLimit: this.itemsPerPage
+            };
+        }
+
+        const topIds = new Set(this.topRentedDresses.map(d => d.id));
+        const regularDresses = this.filteredDresses.filter(d => !topIds.has(d.id));
+        const page1RegularLimit = Math.max(0, this.itemsPerPage - this.topRentedDresses.length);
+        const remaining = Math.max(0, regularDresses.length - page1RegularLimit);
+        const totalPages = 1 + Math.ceil(remaining / this.itemsPerPage);
+
+        return { isSplitView: true, totalPages, regularDresses, page1RegularLimit };
+    }
+
     render() {
         this.container.innerHTML = '';
+
+        const { isSplitView, totalPages, regularDresses, page1RegularLimit } = this.getPaginationState();
+        if (this.currentPage > totalPages) this.currentPage = totalPages;
+
+        // Mostrar "Los Más Rentados" solo en la página 1 (cuando no hay filtros activos)
+        const topSection = document.getElementById('mas-rentados');
+        const topContainer = document.getElementById('top-rented-container');
+        if (topSection && topContainer) {
+            if (isSplitView && this.currentPage === 1) {
+                topSection.style.display = 'block';
+                topContainer.innerHTML = this.topRentedDresses
+                    .map((dress, idx) => dress.generateCardHTML(idx + 1))
+                    .join('');
+            } else {
+                topSection.style.display = 'none';
+            }
+        }
 
         if (this.filteredDresses.length === 0) {
             const emptyMsg = IS_SALES_CATALOG && this.allDresses.length === 0
@@ -515,11 +554,18 @@ class Catalog {
             return;
         }
 
-        const totalPages = Math.max(1, Math.ceil(this.filteredDresses.length / this.itemsPerPage));
-        if (this.currentPage > totalPages) this.currentPage = totalPages;
-
-        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
-        const pageDresses = this.filteredDresses.slice(startIndex, startIndex + this.itemsPerPage);
+        let pageDresses = [];
+        if (isSplitView) {
+            if (this.currentPage === 1) {
+                pageDresses = regularDresses.slice(0, page1RegularLimit);
+            } else {
+                const startIndex = page1RegularLimit + (this.currentPage - 2) * this.itemsPerPage;
+                pageDresses = regularDresses.slice(startIndex, startIndex + this.itemsPerPage);
+            }
+        } else {
+            const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+            pageDresses = this.filteredDresses.slice(startIndex, startIndex + this.itemsPerPage);
+        }
 
         pageDresses.forEach(dress => {
             this.container.innerHTML += dress.generateCardHTML();
@@ -528,27 +574,16 @@ class Catalog {
         this.renderPagination(totalPages);
     }
 
-    renderPagination(totalPages) {
-        const paginationContainer = document.getElementById('pagination-controls');
-        if (!paginationContainer) return;
+    changePage(newPage) {
+        const { isSplitView, totalPages } = this.getPaginationState();
+        if (newPage < 1 || newPage > totalPages) return;
+        this.currentPage = newPage;
+        this.render();
 
-        if (this.filteredDresses.length === 0) {
-            paginationContainer.innerHTML = '';
-            return;
-        }
-
-        const disableBack5 = this.currentPage <= 5;
-        const disablePrev  = this.currentPage <= 1;
-        const disableNext  = this.currentPage >= totalPages;
-        const disableNext5 = (this.currentPage + 5) > totalPages;
-
-        paginationContainer.innerHTML = `
-            <button class="page-btn" title="Retroceder 5 páginas" ${disableBack5 ? 'disabled' : ''} onclick="window.appCatalog.changePage(${this.currentPage - 5})">&laquo; 5</button>
-            <button class="page-btn" title="Página anterior" ${disablePrev ? 'disabled' : ''} onclick="window.appCatalog.changePage(${this.currentPage - 1})">&lsaquo;</button>
-            <span class="page-info">Página ${this.currentPage} de ${totalPages}</span>
-            <button class="page-btn" title="Página siguiente" ${disableNext ? 'disabled' : ''} onclick="window.appCatalog.changePage(${this.currentPage + 1})">&rsaquo;</button>
-            <button class="page-btn" title="Avanzar 5 páginas" ${disableNext5 ? 'disabled' : ''} onclick="window.appCatalog.changePage(${this.currentPage + 5})">5 &raquo;</button>
-        `;
+        const targetSection = (isSplitView && this.currentPage === 1)
+            ? document.getElementById('mas-rentados')
+            : document.getElementById('catalogo');
+        if (targetSection) targetSection.scrollIntoView({ behavior: 'smooth' });
     }
 
     changePage(newPage) {
