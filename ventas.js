@@ -335,7 +335,62 @@ function renderSales(list, isFiltered) {
         `;
     }).join('');
 }
+// --- SELECTOR DE TALLAS CON BOTONES ---
+const sSizeButtons = Array.from(document.querySelectorAll('#s-size-selector .form-size-btn'));
+const sSizeCustom = document.getElementById('s-size-custom');
+const sSizeHidden = document.getElementById('s-size');
 
+function syncSalesSizes() {
+    const selected = sSizeButtons
+        .filter(btn => btn.classList.contains('active'))
+        .map(btn => btn.dataset.size);
+    const customVal = sSizeCustom ? sSizeCustom.value.trim() : '';
+    if (customVal) {
+        customVal.split(/[,\-]+/).map(s => s.trim()).filter(Boolean).forEach(s => {
+            if (!selected.includes(s)) selected.push(s);
+        });
+    }
+    if (sSizeHidden) sSizeHidden.value = selected.join(', ');
+}
+
+function setSalesFormSizes(sizeStr) {
+    sSizeButtons.forEach(b => b.classList.remove('active'));
+    if (sSizeCustom) sSizeCustom.value = '';
+    const customs = [];
+
+    String(sizeStr || '').split(/[,\-]+/).map(s => s.trim()).filter(Boolean).forEach(sz => {
+        const match = sSizeButtons.find(b => b.dataset.size.toUpperCase() === sz.toUpperCase());
+        if (match) match.classList.add('active');
+        else customs.push(sz);
+    });
+
+    if (sSizeCustom) sSizeCustom.value = customs.join(', ');
+    syncSalesSizes();
+}
+
+sSizeButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const isEditing = Boolean(document.getElementById('edit-id').value);
+        if (isEditing) {
+            sSizeButtons.forEach(b => b.classList.remove('active'));
+            if (sSizeCustom) sSizeCustom.value = '';
+            btn.classList.add('active');
+        } else {
+            btn.classList.toggle('active');
+        }
+        syncSalesSizes();
+    });
+});
+
+if (sSizeCustom) {
+    sSizeCustom.addEventListener('input', () => {
+        const isEditing = Boolean(document.getElementById('edit-id').value);
+        if (isEditing && sSizeCustom.value.trim()) {
+            sSizeButtons.forEach(b => b.classList.remove('active'));
+        }
+        syncSalesSizes();
+    });
+}
 // --- EDITAR ARTÍCULO EN VENTAS ---
 window.startEdit = function(id) {
     const d = allSales.find(item => String(item.id) === String(id));
@@ -346,7 +401,7 @@ window.startEdit = function(id) {
     document.getElementById('s-type').value = d.type;
     document.getElementById('s-name').value = d.name;
     document.getElementById('s-color').value = d.color;
-    document.getElementById('s-size').value = d.size;
+    setSalesFormSizes(d.size);
     document.getElementById('s-price').value = d.price;
     document.getElementById('s-deposit').value = d.deposit;
 
@@ -390,6 +445,7 @@ window.removeKeptImage = function(idx) {
 
 function resetForm() {
     document.getElementById('sales-form').reset();
+    setSalesFormSizes('');
     document.getElementById('edit-id').value = '';
     document.getElementById('s-type').value = 'Vestido';
     document.getElementById('s-deposit').value = '0';
@@ -412,7 +468,12 @@ document.getElementById('sales-form').addEventListener('submit', async (e) => {
     const type = document.getElementById('s-type').value.trim();
     const name = document.getElementById('s-name').value.trim();
     const color = document.getElementById('s-color').value.trim();
+    syncSalesSizes();
     const size = document.getElementById('s-size').value.trim();
+    if (!size) {
+        alert('Por favor, selecciona al menos una talla.');
+        return;
+    }
     const price = document.getElementById('s-price').value;
     const deposit = document.getElementById('s-deposit').value || 0;
     const status = document.getElementById('s-status').value;
