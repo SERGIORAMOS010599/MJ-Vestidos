@@ -866,3 +866,42 @@ body {
         max-width: 100%;
     }
 }
+/* --- SELECTOR DE TALLAS CON BOTONES EN FORMULARIO --- */
+.form-size-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-top: 2px;
+}
+
+.form-size-btn {
+    padding: 8px 16px;
+    border: 1px solid #d5d1c8;
+    border-radius: 20px;
+    background: #fcfbf8;
+    color: #222;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.form-size-btn:hover {
+    border-color: #d4af37;
+    background: #fff;
+}
+
+.form-size-btn.active {
+    background: #111;
+    color: #d4af37;
+    border-color: #d4af37;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+
+.custom-size-input {
+    width: 145px;
+    padding: 7px 12px !important;
+    border-radius: 20px !important;
+    font-size: 0.85rem !important;
+}
