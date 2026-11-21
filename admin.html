@@ -220,21 +220,81 @@
         let currentRentDress = null;
         let currentReleaseDress = null;
 
-        // --- BLOQUEO POR PIN ---
+       // --- SESIÓN COMPARTIDA CON CIERRE POR INACTIVIDAD (1 HORA) ---
+        const SESSION_KEY = 'mj_admin_last_activity';
+        const INACTIVITY_LIMIT = 60 * 60 * 1000; // 1 hora en milisegundos
         const authOverlay = document.getElementById('auth-overlay');
         const pinInput = document.getElementById('admin-pin');
         const btnUnlock = document.getElementById('btn-unlock');
 
+        let sessionInterval = null;
+        let lastWriteTime = 0;
+
+        function isSessionValid() {
+            const last = Number(localStorage.getItem(SESSION_KEY) || 0);
+            return last > 0 && (Date.now() - last) < INACTIVITY_LIMIT;
+        }
+
+        function refreshActivity() {
+            if (authOverlay.style.display !== 'none') return;
+            const now = Date.now();
+            if (now - lastWriteTime > 15000) { // Actualiza cada 15s como máximo
+                localStorage.setItem(SESSION_KEY, String(now));
+                lastWriteTime = now;
+            }
+        }
+
+        function lockSession(byTimeout) {
+            localStorage.removeItem(SESSION_KEY);
+            if (sessionInterval) {
+                clearInterval(sessionInterval);
+                sessionInterval = null;
+            }
+            pinInput.value = '';
+            authOverlay.style.display = 'flex';
+            if (byTimeout) {
+                alert('Tu sesión se cerró automáticamente tras 1 hora de inactividad.');
+            }
+        }
+
+        function startSessionMonitor() {
+            if (sessionInterval) clearInterval(sessionInterval);
+            sessionInterval = setInterval(() => {
+                if (!isSessionValid()) {
+                    lockSession(true);
+                }
+            }, 30000); // Revisa cada 30 segundos
+        }
+
+        function unlockAdmin() {
+            const now = Date.now();
+            localStorage.setItem(SESSION_KEY, String(now));
+            lastWriteTime = now;
+            authOverlay.style.display = 'none';
+            startSessionMonitor();
+            loadInventory();
+        }
+
+        ['click', 'keydown', 'mousemove', 'scroll', 'touchstart'].forEach(evt => {
+            window.addEventListener(evt, refreshActivity, { passive: true });
+        });
+
         btnUnlock.addEventListener('click', () => {
             if (pinInput.value === CLAVE_SECRETA) {
-                authOverlay.style.display = 'none';
-                loadInventory();
+                unlockAdmin();
             } else {
                 alert('Clave incorrecta.');
                 pinInput.value = '';
             }
         });
         pinInput.addEventListener('keypress', e => { if (e.key === 'Enter') btnUnlock.click(); });
+
+        // Verificar si ya hay sesión activa al cargar la página
+        setTimeout(() => {
+            if (isSessionValid()) {
+                unlockAdmin();
+            }
+        }, 0);
 
         // --- UTILIDADES DE FECHA Y TEXTO ---
         function normalizeText(str) {
