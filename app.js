@@ -1,7 +1,7 @@
 const SHEET_ID = '18gsvPp2HSMR0DKIfYfZijnwc_PyNV7ULch-UDEVupV0';
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwaKJxY7JErnXQUYi_OCTuKmGjyBoxlPe-RRcM_XmSkYrwRic2EK7nYSDN-W8VmmiSN/exec';
+const IS_SALES_CATALOG = window.CATALOG_MODE === 'VENTAS';
 
-// Horarios disponibles para citas (formato 12h AM/PM)
 const TIME_SLOTS_12H = [
     '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
     '12:00 PM', '12:30 PM', '1:00 PM', '1:30 PM',
@@ -34,7 +34,26 @@ function normalizeText(str) {
     return String(str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
-// Detecta color base para el cuadrito de color en el filtro
+function getRowRentalsCount(rawControl) {
+    if (!rawControl) return 0;
+    try {
+        const parsed = JSON.parse(rawControl);
+        let total = Number(parsed.historical || 0);
+        if (parsed.monthly && typeof parsed.monthly === 'object') {
+            Object.values(parsed.monthly).forEach(monthObj => {
+                if (monthObj && typeof monthObj === 'object') {
+                    Object.values(monthObj).forEach(cnt => {
+                        total += Number(cnt || 0);
+                    });
+                }
+            });
+        }
+        return total;
+    } catch (e) {
+        return 0;
+    }
+}
+
 function getBaseColorInfo(rawColor) {
     const c = normalizeText(rawColor);
     const map = [
@@ -89,7 +108,7 @@ function getHermosilloTodayStr() {
 }
 
 class Dress {
-    constructor(id, type, name, sizes, price, deposit, color, images, status, comments) {
+    constructor(id, type, name, sizes, price, deposit, color, images, status, comments, totalRentals = 0) {
         this.id = String(id);
         this.type = String(type || 'Vestido');
         this.name = String(name || 'Sin nombre');
@@ -99,25 +118,29 @@ class Dress {
         this.color = String(color || 'N/A');
         this.baseColor = getBaseColorInfo(this.color);
         this.images = images;
-        this.status = String(status || 'Disponible');
+        this.status = String(status || (IS_SALES_CATALOG ? 'En Venta' : 'Disponible'));
         this.comments = String(comments || '');
+        this.totalRentals = Number(totalRentals) || 0;
     }
 
-    generateCardHTML() {
+    generateCardHTML(rankNumber = null) {
         const portada = this.images[0] || 'img/proximamente.png';
         const spheresHtml = this.sizes
             .map(sz => `<span class="size-sphere">${sz}</span>`)
             .join('');
+        const priceSuffix = IS_SALES_CATALOG ? 'MXN' : 'MXN / noche';
+        const rankBadgeHtml = rankNumber ? `<span class="rank-badge">#${rankNumber}</span>` : '';
 
         return `
             <div class="dress-card" onclick="window.appCatalog.openBookingModal('${this.id}')">
+                ${rankBadgeHtml}
                 <img src="${portada}" alt="${this.name}" class="dress-image" loading="lazy">
                 <div class="dress-info">
                     <h3>${this.name}</h3>
                     <p><strong>Color:</strong> ${this.color}</p>
                     <div class="size-spheres-container">${spheresHtml}</div>
                     <p style="font-size: 0.8rem; margin: 6px 0; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">${this.type}</p>
-                    <p class="dress-price">$${this.price.toFixed(2)} MXN / noche</p>
+                    <p class="dress-price">$${this.price.toFixed(2)} ${priceSuffix}</p>
                 </div>
             </div>
         `;
@@ -130,12 +153,12 @@ class Catalog {
         this.allDresses = [];
         this.filteredDresses = [];
         this.selectedDress = null;
+        this.citaDressName = '';
         this.currentPage = 1;
         this.itemsPerPage = 50;
 
-        // Estado de filtros
         this.filterState = {
-            sort: '', // '' | 'asc' | 'desc'
+            sort: '', // '' | 'popular' | 'asc' | 'desc'
             sizes: new Set(),
             colors: new Set(),
             minPrice: 0,
@@ -144,8 +167,7 @@ class Catalog {
             absMaxPrice: 5000
         };
 
-        // Estado del calendario de citas
-        this.bookedSlots = {}; // { 'YYYY-MM-DD': Set(['10:00 AM', ...]) }
+        this.bookedSlots = {};
         const todayStr = getHermosilloTodayStr();
         const [ty, tm] = todayStr.split('-').map(Number);
         this.calYear = ty;
@@ -158,52 +180,21 @@ class Catalog {
         this.initCitaEvents();
         this.loadFromGoogleSheets();
     }
-    // =========================================
-    // --- PASARELA CINEMATOGRÁFICA DE PORTADA ---
-    // =========================================
-    initHeroRunway() {
-        const track = document.getElementById('hero-runway-track');
-        if (!track) return;
 
-        // Tomar solo vestidos que sí tengan foto real (ignorar proximamente.png)
-        const realPhotos = this.allDresses
-            .map(d => d.images[0])
-            .filter(url => url && !url.toLowerCase().includes('proximamente.png'));
-
-        if (realPhotos.length === 0) return;
-
-        // Mezclar aleatoriamente y tomar hasta 18 fotos para que cargue súper rápido
-        const shuffled = [...realPhotos];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-
-        let selected = shuffled.slice(0, 18);
-        // Si hay poquitas fotos, repetir hasta tener al menos 8 para llenar pantallas anchas
-        while (selected.length < 8) {
-            selected = selected.concat(shuffled);
-        }
-
-        // Duplicar la lista exacta para que el bucle -50% sea infinito sin saltos
-        const loopList = [...selected, ...selected];
-
-        // Velocidad constante y suave (~4 segundos por vestido)
-        track.style.animationDuration = `${selected.length * 4}s`;
-
-        track.innerHTML = loopList
-            .map(url => `<div class="hero-runway-slide"><img src="${url}" alt="Colección MJ Vestidos"></div>`)
-            .join('');
-    }
     async loadFromGoogleSheets() {
-        this.container.innerHTML = '<p style="text-align:center; width:100%;">Cargando catálogo de MJ Vestidos...</p>';
-        const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&t=${Date.now()}`;
+        const loadingMsg = IS_SALES_CATALOG
+            ? 'Cargando vestidos en venta...'
+            : 'Cargando catálogo de MJ Vestidos...';
+        this.container.innerHTML = `<p style="text-align:center; width:100%;">${loadingMsg}</p>`;
+
+        const sheetParam = IS_SALES_CATALOG ? 'sheet=VENTAS&' : '';
+        const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?${sheetParam}tqx=out:json&t=${Date.now()}`;
 
         try {
             const response = await fetch(url);
             const text = await response.text();
             const json = JSON.parse(text.substring(47).slice(0, -2));
-            const rows = json.table.rows;
+            const rows = (json.table && json.table.rows) ? json.table.rows : [];
 
             const groupedMap = new Map();
 
@@ -218,11 +209,15 @@ class Catalog {
                     const deposit  = row.c[5] && row.c[5].v ? parseFloat(row.c[5].v) : 0;
                     const color    = row.c[6] && row.c[6].v ? String(row.c[6].v).trim() : 'N/A';
                     const imgStr   = row.c[7] && row.c[7].v ? String(row.c[7].v) : '';
-                    const status   = row.c[8] && row.c[8].v ? String(row.c[8].v).trim() : 'Disponible';
+                    const status   = row.c[8] && row.c[8].v ? String(row.c[8].v).trim() : (IS_SALES_CATALOG ? 'En Venta' : 'Disponible');
                     const comments = row.c[9] && row.c[9].v ? String(row.c[9].v).trim() : '';
+                    const rawCtrl  = row.c[10] && row.c[10].v ? String(row.c[10].v) : '';
+                    const rowRentals = getRowRentalsCount(rawCtrl);
 
                     const images = imgStr ? imgStr.split(',').map(img => img.trim()).filter(Boolean) : [];
-                    const isAvail = !status.toLowerCase().includes('rentado');
+                    const isAvail = IS_SALES_CATALOG
+                        ? !status.toLowerCase().includes('vendido')
+                        : !status.toLowerCase().includes('rentado');
 
                     if (!groupedMap.has(baseId)) {
                         groupedMap.set(baseId, {
@@ -231,11 +226,14 @@ class Catalog {
                             price, deposit, color,
                             images: images.length ? images : ['img/proximamente.png'],
                             hasAvailable: isAvail,
-                            comments
+                            statusLabel: status,
+                            comments,
+                            totalRentals: rowRentals
                         });
                     } else {
                         const existing = groupedMap.get(baseId);
                         existing.sizesSet.add(size);
+                        existing.totalRentals += rowRentals;
                         if (isAvail) existing.hasAvailable = true;
                         if (existing.images[0] === 'img/proximamente.png' && images.length) existing.images = images;
                         if (!existing.comments && comments) existing.comments = comments;
@@ -248,21 +246,80 @@ class Catalog {
                     const diff = getSizeRank(a) - getSizeRank(b);
                     return diff !== 0 ? diff : a.localeCompare(b, 'es');
                 });
+                const finalStatus = IS_SALES_CATALOG
+                    ? (item.hasAvailable ? item.statusLabel : 'Vendido')
+                    : (item.hasAvailable ? 'Disponible' : 'Rentado');
+
                 return new Dress(
                     item.id, item.type, item.name, sortedSizes,
                     item.price, item.deposit, item.color,
-                    item.images, item.hasAvailable ? 'Disponible' : 'Rentado', item.comments
+                    item.images, finalStatus, item.comments, item.totalRentals
                 );
             });
 
             this.buildFilterOptions();
+            this.renderTopRented();
             this.applyFilters(false);
             this.initHeroRunway();
-            
         } catch (error) {
             console.error("Error cargando la base de datos:", error);
             this.container.innerHTML = '<p style="text-align:center; width:100%; color:red;">No se pudo cargar el catálogo. Verifica tu conexión.</p>';
         }
+    }
+
+    // =========================================
+    // --- SECCIÓN: LOS MÁS RENTADOS (TOP 20) ---
+    // =========================================
+    renderTopRented() {
+        const section = document.getElementById('mas-rentados');
+        const track = document.getElementById('top-rented-container');
+        if (!section || !track || IS_SALES_CATALOG) return;
+
+        const top20 = [...this.allDresses]
+            .filter(d => d.totalRentals > 0)
+            .sort((a, b) => b.totalRentals - a.totalRentals)
+            .slice(0, 20);
+
+        if (top20.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+
+        section.style.display = 'block';
+        track.innerHTML = top20
+            .map((dress, idx) => dress.generateCardHTML(idx + 1))
+            .join('');
+    }
+
+    // =========================================
+    // --- PASARELA CINEMATOGRÁFICA DE PORTADA ---
+    // =========================================
+    initHeroRunway() {
+        const track = document.getElementById('hero-runway-track');
+        if (!track) return;
+
+        const realPhotos = this.allDresses
+            .map(d => d.images[0])
+            .filter(url => url && !url.toLowerCase().includes('proximamente.png'));
+
+        if (realPhotos.length === 0) return;
+
+        const shuffled = [...realPhotos];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+
+        let selected = shuffled.slice(0, 18);
+        while (selected.length < 8) {
+            selected = selected.concat(shuffled);
+        }
+
+        const loopList = [...selected, ...selected];
+        track.style.animationDuration = `${selected.length * 4}s`;
+        track.innerHTML = loopList
+            .map(url => `<div class="hero-runway-slide"><img src="${url}" alt="Colección MJ Vestidos"></div>`)
+            .join('');
     }
 
     // =========================================
@@ -297,7 +354,6 @@ class Catalog {
             if (cat) cat.scrollIntoView({ behavior: 'smooth' });
         });
 
-        // Ordenar por precio
         document.querySelectorAll('[data-sort]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const val = btn.dataset.sort;
@@ -313,13 +369,10 @@ class Catalog {
             });
         });
 
-        // Rango de precios
         const handlePriceChange = () => {
             let minVal = Number(minRange.value);
             let maxVal = Number(maxRange.value);
-            if (minVal > maxVal) {
-                [minVal, maxVal] = [maxVal, minVal];
-            }
+            if (minVal > maxVal) [minVal, maxVal] = [maxVal, minVal];
             this.filterState.minPrice = minVal;
             this.filterState.maxPrice = maxVal;
             this.updatePriceSliderUI();
@@ -347,7 +400,6 @@ class Catalog {
     }
 
     buildFilterOptions() {
-        // 1. Tallas únicas ordenadas
         const sizesSet = new Set();
         const colorsMap = new Map();
         let minP = Infinity;
@@ -387,7 +439,6 @@ class Catalog {
             sizesEl.appendChild(btn);
         });
 
-        // 2. Colores con cuadrito visual
         const colorsEl = document.getElementById('filter-colors-list');
         colorsEl.innerHTML = '';
         Array.from(colorsMap.entries())
@@ -410,7 +461,6 @@ class Catalog {
                 colorsEl.appendChild(btn);
             });
 
-        // 3. Rango de precios dinámico
         if (!isFinite(minP)) minP = 0;
         if (maxP <= minP) maxP = minP + 500;
         this.filterState.absMinPrice = minP;
@@ -448,12 +498,12 @@ class Catalog {
             return true;
         });
 
-        if (sort === 'asc') result.sort((a, b) => a.price - b.price);
+        if (sort === 'popular') result.sort((a, b) => b.totalRentals - a.totalRentals);
+        else if (sort === 'asc') result.sort((a, b) => a.price - b.price);
         else if (sort === 'desc') result.sort((a, b) => b.price - a.price);
 
         this.filteredDresses = result;
 
-        // Actualizar contador del botón "Ver X artículos" y punto dorado si hay filtro activo
         const btnApply = document.getElementById('btn-apply-filters');
         if (btnApply) btnApply.innerText = `Ver ${result.length} artículos`;
 
@@ -472,7 +522,10 @@ class Catalog {
         this.container.innerHTML = '';
 
         if (this.filteredDresses.length === 0) {
-            this.container.innerHTML = '<p style="text-align:center; width:100%; padding:30px 0; color:#666;">No se encontraron vestidos con los filtros seleccionados.</p>';
+            const emptyMsg = IS_SALES_CATALOG && this.allDresses.length === 0
+                ? 'Próximamente agregaremos vestidos en venta.'
+                : 'No se encontraron vestidos con los filtros seleccionados.';
+            this.container.innerHTML = `<p style="text-align:center; width:100%; padding:30px 0; color:#666;">${emptyMsg}</p>`;
             this.renderPagination(1);
             return;
         }
@@ -553,16 +606,31 @@ class Catalog {
 
         document.getElementById('modal-dress-type').innerText = d.type;
         document.getElementById('modal-dress-name').innerText = d.name;
-        document.getElementById('modal-dress-price').innerText = `$${d.price.toFixed(2)} MXN / noche`;
-        document.getElementById('modal-dress-deposit').innerText = `Depósito reembolsable: $${d.deposit.toFixed(2)} MXN`;
+
+        const priceEl = document.getElementById('modal-dress-price');
+        const depositEl = document.getElementById('modal-dress-deposit');
+
+        if (IS_SALES_CATALOG) {
+            priceEl.innerText = `Precio de venta: $${d.price.toFixed(2)} MXN`;
+            depositEl.style.display = d.deposit > 0 ? 'block' : 'none';
+            depositEl.innerText = `Apartado / Anticipo: $${d.deposit.toFixed(2)} MXN`;
+        } else {
+            priceEl.innerText = `$${d.price.toFixed(2)} MXN / noche`;
+            depositEl.style.display = 'block';
+            depositEl.innerText = `Depósito reembolsable: $${d.deposit.toFixed(2)} MXN`;
+        }
+
         document.getElementById('modal-dress-color').innerText = d.color;
 
         const statusEl = document.getElementById('modal-status-badge');
-        const isRentado = d.status.toLowerCase().includes('rentado');
-        statusEl.innerText = isRentado ? 'Actualmente Rentado' : 'Disponible';
-        statusEl.style.backgroundColor = isRentado ? '#fdecea' : '#e8f7ee';
-        statusEl.style.color = isRentado ? '#b71c1c' : '#1b7a43';
-        statusEl.style.border = isRentado ? '1px solid #f5c6cb' : '1px solid #b7e4c7';
+        const stLow = d.status.toLowerCase();
+        const isUnavailable = stLow.includes('rentado') || stLow.includes('vendido');
+        statusEl.innerText = IS_SALES_CATALOG
+            ? d.status
+            : (isUnavailable ? 'Actualmente Rentado' : 'Disponible');
+        statusEl.style.backgroundColor = isUnavailable ? '#fdecea' : '#e8f7ee';
+        statusEl.style.color = isUnavailable ? '#b71c1c' : '#1b7a43';
+        statusEl.style.border = isUnavailable ? '1px solid #f5c6cb' : '1px solid #b7e4c7';
 
         document.getElementById('modal-dress-sizes').innerHTML = d.sizes
             .map(sz => `<span class="size-sphere">${sz}</span>`)
@@ -592,7 +660,16 @@ class Catalog {
         if (btnOpenCita) {
             btnOpenCita.addEventListener('click', () => {
                 modal.style.display = 'none';
-                this.openCitaModal();
+                this.openCitaModal(false);
+            });
+        }
+
+        // Botón "Agenda tu Cita" en la barra de navegación (sin vestido específico)
+        const navCitaBtn = document.getElementById('nav-agenda-cita');
+        if (navCitaBtn) {
+            navCitaBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.openCitaModal(true);
             });
         }
     }
@@ -627,7 +704,6 @@ class Catalog {
             };
         }
 
-        // Reloj en vivo de Hermosillo (12h AM/PM)
         const updateClock = () => {
             const el = document.getElementById('hermosillo-clock');
             if (!el) return;
@@ -649,7 +725,7 @@ class Catalog {
 
                 const clientName = document.getElementById('cita-client-name').value.trim();
                 const clientPhone = document.getElementById('cita-client-phone').value.trim();
-                const dressName = this.selectedDress ? this.selectedDress.name : 'Consulta general';
+                const dressName = this.citaDressName;
 
                 const btn = document.getElementById('btn-confirm-cita');
                 btn.disabled = true;
@@ -664,7 +740,7 @@ class Catalog {
                             time: this.selectedTime,
                             client: clientName,
                             phone: clientPhone,
-                            dress: dressName
+                            dress: dressName || 'Consulta general'
                         })
                     });
                     const data = await res.json();
@@ -675,7 +751,10 @@ class Catalog {
                         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
                     });
 
-                    const waMsg = `Hola, acabo de agendar una cita en MJ Vestidos para el ${prettyDate} a las ${this.selectedTime}. Estoy interesada en el vestido ${dressName}. Mi nombre es ${clientName}.`;
+                    // Si viene del menú superior no menciona ningún vestido
+                    const waMsg = dressName
+                        ? `Hola, acabo de agendar una cita en MJ Vestidos para el ${prettyDate} a las ${this.selectedTime}. Estoy interesada en el vestido ${dressName}. Mi nombre es ${clientName}.`
+                        : `Hola, acabo de agendar una cita en MJ Vestidos para el ${prettyDate} a las ${this.selectedTime}. Me gustaría conocer sus vestidos disponibles. Mi nombre es ${clientName}.`;
                     const waUrl = `https://wa.me/526623175465?text=${encodeURIComponent(waMsg)}`;
 
                     document.getElementById('cita-body').style.display = 'none';
@@ -684,15 +763,14 @@ class Catalog {
                     successBox.innerHTML = `
                         <h3>¡Cita Confirmada! ✅</h3>
                         <p>
-                            Te esperamos el <strong>${prettyDate}</strong> a las <strong>${this.selectedTime}</strong> (hora de Hermosillo).<br>
-                            Vestido de interés: <strong>${dressName}</strong>
+                            Te esperamos el <strong>${prettyDate}</strong> a las <strong>${this.selectedTime}</strong> (hora de Hermosillo).
+                            ${dressName ? `<br>Vestido de interés: <strong>${dressName}</strong>` : ''}
                         </p>
                         <a href="${waUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:13px 26px;background:#25d366;color:#fff;text-decoration:none;border-radius:6px;font-weight:700;margin-bottom:10px;">
                             📲 Confirmar también por WhatsApp
                         </a>
                     `;
 
-                    // Recargar horarios ocupados en segundo plano
                     this.loadBookedSlots();
                 } catch (err) {
                     alert(err.message);
@@ -723,13 +801,21 @@ class Catalog {
                 }
             });
         } catch (err) {
-            console.warn('No se pudieron cargar citas previas (verifica que exista la pestaña CITAS):', err);
+            console.warn('No se pudieron cargar citas previas:', err);
         }
     }
 
-    async openCitaModal() {
-        const dressName = this.selectedDress ? this.selectedDress.name : 'Prueba de vestido';
-        document.getElementById('cita-dress-subtitle').innerText = `Interés en: ${dressName}`;
+    async openCitaModal(isGeneral = false) {
+        if (isGeneral || !this.selectedDress) {
+            this.citaDressName = '';
+            document.getElementById('cita-dress-subtitle').innerText = 'Agenda tu cita en MJ Vestidos';
+        } else {
+            this.citaDressName = IS_SALES_CATALOG
+                ? `${this.selectedDress.name} (En Venta)`
+                : this.selectedDress.name;
+            document.getElementById('cita-dress-subtitle').innerText = `Interés en: ${this.selectedDress.name}`;
+        }
+
         document.getElementById('cita-confirm-form').reset();
         document.getElementById('cita-body').style.display = 'grid';
         document.getElementById('cita-success-box').style.display = 'none';
@@ -755,10 +841,8 @@ class Catalog {
         const grid = document.getElementById('cal-days-grid');
         grid.innerHTML = '';
 
-        // Lunes = 0 ... Domingo = 6
         let startDay = monthDate.getDay() - 1;
         if (startDay < 0) startDay = 6;
-
         for (let i = 0; i < startDay; i++) {
             grid.appendChild(document.createElement('span'));
         }
