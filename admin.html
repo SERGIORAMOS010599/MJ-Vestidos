@@ -582,7 +582,7 @@
                             <span class="cita-click-hint">👆 Haz clic para ver ficha completa del vestido / pedido</span>
                         </div>
                         <div class="cita-item-actions">
-                            ${stLow !== 'atendida' ? `<button type="button" class="btn btn-available" onclick="event.stopPropagation(); updateCitaStatus('${c.id}', 'Atendida')">✅ Atendida</button>` : ''}
+                            ${stLow !==${(stLow !== 'atendida' && stLow !== 'vendida' && !isVenta) ? `<button type="button" class="btn btn-available" onclick="event.stopPropagation(); updateCitaStatus('${c.id}', 'Atendida')">✅ Atendida</button>` : ''}
                             ${stLow !== 'cancelada' ? `<button type="button" class="btn btn-edit" onclick="event.stopPropagation(); updateCitaStatus('${c.id}', 'Cancelada')">✖️ Cancelar</button>` : ''}
                             <button type="button" class="btn btn-delete" title="Eliminar cita" onclick="event.stopPropagation(); deleteCita('${c.id}')">🗑️</button>
                         </div>
