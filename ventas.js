@@ -439,24 +439,105 @@ async function ensureRentDressesLoaded() {
     return cachedRentDresses;
 }
 
+let currentDetailCita = null;
+let currentOrderItems = [];
+let currentOrderDirty = false;
+let isOrderPickerOpen = false;
+let orderPickerSelectedKeys = new Set();
+
+function buildOrderSummaryString(items) {
+    if (!items || items.length === 0) return 'Consulta general';
+    const total = items.reduce((sum, it) => sum + Number(it.price || 0), 0);
+    const listStr = items
+        .map(it => `${it.name} (Talla: ${it.size || 'Única'}, Color: ${it.color || 'N/A'}, $${Number(it.price || 0).toFixed(2)})`)
+        .join(' | ');
+    return `Pedido (${items.length}): ${listStr} — Total: $${total.toFixed(2)} MXN`;
+}
+
+function parseSaleOrderItems(rawDress, salesPool) {
+    const items = [];
+    const text = String(rawDress || '').trim();
+    if (!text || normalizeText(text) === 'consulta general') return items;
+
+    if (/^pedido\s*\(\d+\):/i.test(text)) {
+        const match = text.match(/^Pedido\s*\(\d+\):\s*(.+?)(?:\s*—\s*Total:\s*(.+))?$/i);
+        const listPart = match ? match[1] : text;
+        const entries = listPart.split('|').map(s => s.trim()).filter(Boolean);
+
+        entries.forEach(entry => {
+            const mItem = entry.match(/^(.+?)\s*\(Talla:\s*([^,]+),\s*Color:\s*([^,]+),\s*\$?([\d.,]+)\)$/i);
+            const itemName = mItem ? mItem[1].trim() : entry;
+            const itemSize = mItem ? mItem[2].trim() : '';
+            const itemColor = mItem ? mItem[3].trim() : '';
+            const itemPrice = mItem ? Number(String(mItem[4]).replace(/,/g, '')) : 0;
+
+            const found = salesPool.find(s =>
+                normalizeText(s.name) === normalizeText(itemName) &&
+                (!itemSize || String(s.size).trim().toUpperCase() === itemSize.toUpperCase())
+            ) || salesPool.find(s => normalizeText(s.name) === normalizeText(itemName));
+
+            items.push({
+                id: found ? found.id : '',
+                name: found ? found.name : itemName,
+                size: itemSize || (found ? found.size : 'Única'),
+                color: itemColor || (found ? found.color : 'N/A'),
+                price: itemPrice || (found ? Number(found.price) : 0),
+                image: (found && found.images[0]) ? found.images[0] : 'img/proximamente.png',
+                status: found ? found.status : ''
+            });
+        });
+    } else {
+        const cleanName = text.replace(/\s*\(En Venta\)\s*$/i, '').trim();
+        const found = salesPool.find(s => normalizeText(s.name) === normalizeText(cleanName));
+        if (found) {
+            items.push({
+                id: found.id,
+                name: found.name,
+                size: found.size,
+                color: found.color,
+                price: Number(found.price || 0),
+                image: found.images[0] || 'img/proximamente.png',
+                status: found.status
+            });
+        }
+    }
+    return items;
+}
+
 window.openCitaDetail = async function(citaId) {
     const c = allAppointments.find(item => String(item.id) === String(citaId));
     if (!c) return;
+
+    currentDetailCita = c;
+    currentOrderDirty = false;
+    isOrderPickerOpen = false;
+    orderPickerSelectedKeys.clear();
 
     const bodyEl = document.getElementById('cita-detail-body');
     bodyEl.innerHTML = '<p class="status-msg">Cargando información de la cita...</p>';
     citaDetailModal.style.display = 'block';
 
+    const isVenta = c.type.toLowerCase().includes('venta');
+    if (isVenta) {
+        currentOrderItems = parseSaleOrderItems(c.dress, allSales);
+        renderSaleCitaDetail();
+    } else {
+        await renderRentCitaDetail(c);
+    }
+};
+
+function renderSaleCitaDetail() {
+    const c = currentDetailCita;
+    if (!c) return;
+
+    const bodyEl = document.getElementById('cita-detail-body');
     const [y, m, d] = c.date.split('-').map(Number);
     const prettyDate = (y && m && d)
         ? new Date(y, m - 1, d).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
         : c.date;
 
-    const isVenta = c.type.toLowerCase().includes('venta');
     const stLow = c.status.toLowerCase();
-    const typeBadgeHtml = isVenta
-        ? '<span class="cita-type-badge cita-type-venta">🏷️ Cita de Venta</span>'
-        : '<span class="cita-type-badge cita-type-renta">👗 Cita de Renta</span>';
+    const isClosed = stLow === 'vendida' || stLow === 'atendida' || stLow === 'cancelada';
 
     const cleanPhone = c.phone.replace(/\D/g, '');
     const waPhone = cleanPhone.length === 10 ? `52${cleanPhone}` : cleanPhone;
@@ -464,64 +545,253 @@ window.openCitaDetail = async function(citaId) {
         ? `<a href="https://wa.me/${waPhone}" target="_blank" class="cita-phone-link">📲 ${c.phone} (Abrir WhatsApp)</a>`
         : 'Sin teléfono registrado';
 
-    let itemsSectionHtml = '';
+    const total = currentOrderItems.reduce((sum, it) => sum + Number(it.price || 0), 0);
+
+    const cardsHtml = currentOrderItems.length > 0
+        ? currentOrderItems.map((it, idx) => `
+            <div class="cita-detail-dress-card">
+                ${!isClosed ? `<button type="button" class="btn-remove-order-item" title="Quitar del pedido" onclick="removeOrderItem(${idx})">&times;</button>` : ''}
+                <img src="${it.image}" alt="${it.name}">
+                <div class="cita-detail-dress-info" style="padding-right:30px;">
+                    <h4>${it.name}</h4>
+                    <span><strong>Talla elegida:</strong> ${it.size}</span>
+                    <span><strong>Color:</strong> ${it.color}</span>
+                    <span><strong>Precio de venta:</strong> $${Number(it.price).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN</span>
+                    ${it.id ? `<span style="color:#777; font-size:0.8rem;">ID en inventario: ${it.id}${it.status ? ` (${it.status})` : ''}</span>` : ''}
+                </div>
+            </div>
+        `).join('')
+        : '<p style="color:#777; font-size:0.9rem; padding:12px 0;">No hay artículos en este pedido. Usa "+ Añadir artículo" para agregar vestidos.</p>';
+
+    const pickerHtml = isOrderPickerOpen ? `
+        <div class="order-picker-box">
+            <input type="text" id="order-picker-search" class="order-picker-search" placeholder="Buscar vestido en venta por nombre, talla, color o ID..." oninput="renderOrderPickerList()">
+            <div id="order-picker-list" class="order-picker-list"></div>
+            <div class="order-picker-footer">
+                <button type="button" class="btn btn-cancel" style="display:inline-block;" onclick="toggleOrderPicker(false)">Cerrar</button>
+                <button type="button" id="btn-confirm-add-items" class="btn btn-gold" onclick="confirmAddPickerItems()">Agregar seleccionados (${orderPickerSelectedKeys.size})</button>
+            </div>
+        </div>
+    ` : '';
+
+    bodyEl.innerHTML = `
+        <div class="cita-detail-client-box">
+            <div class="cita-time-row" style="margin-bottom:4px;">
+                <span class="cita-type-badge cita-type-venta">🏷️ Cita de Venta</span>
+                <span class="cita-time-badge">${c.time}</span>
+                <span class="status-badge ${(stLow === 'vendida' || stLow === 'atendida') ? 'status-disponible' : (stLow === 'cancelada' ? 'status-rentado' : 'status-custom')}">${c.status}</span>
+            </div>
+            <div><strong>Fecha:</strong> <span style="text-transform:capitalize;">${prettyDate}</span></div>
+            <div><strong>Clienta:</strong> ${c.client}</div>
+            <div><strong>Teléfono:</strong> ${phoneHtml}</div>
+        </div>
+
+        <div class="cita-detail-header-row">
+            <h3 class="cita-detail-section-title">Artículos del Pedido (${currentOrderItems.length})</h3>
+            ${!isClosed ? `<button type="button" class="btn-add-order-item" onclick="toggleOrderPicker()">${isOrderPickerOpen ? '✖️ Cerrar lista' : '+ Añadir artículo'}</button>` : ''}
+        </div>
+
+        ${pickerHtml}
+
+        <div class="cita-detail-items">${cardsHtml}</div>
+
+        <div class="cita-detail-total-bar">
+            <span>Total del Pedido:</span>
+            <span>$${total.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN</span>
+        </div>
+
+        <div class="cita-detail-actions">
+            ${(!isClosed && currentOrderDirty) ? `<button type="button" id="btn-save-order-changes" class="btn btn-gold" onclick="saveOrderChanges()">💾 Guardar cambios</button>` : ''}
+            ${!isClosed ? `<button type="button" id="btn-mark-sold" class="btn btn-available" onclick="completeSaleOrder()">✅ Marcar como Vendido</button>` : ''}
+            ${stLow !== 'cancelada' ? `<button type="button" class="btn btn-edit" onclick="updateCitaStatus('${c.id}', 'Cancelada')">✖️ Cancelar Cita</button>` : ''}
+            <button type="button" class="btn btn-delete" onclick="deleteCita('${c.id}')">🗑️ Eliminar</button>
+        </div>
+    `;
+
+    if (isOrderPickerOpen) {
+        renderOrderPickerList();
+    }
+}
+
+window.removeOrderItem = function(idx) {
+    currentOrderItems.splice(idx, 1);
+    currentOrderDirty = true;
+    renderSaleCitaDetail();
+};
+
+window.toggleOrderPicker = function(forceState) {
+    isOrderPickerOpen = typeof forceState === 'boolean' ? forceState : !isOrderPickerOpen;
+    if (!isOrderPickerOpen) orderPickerSelectedKeys.clear();
+    renderSaleCitaDetail();
+};
+
+window.togglePickerSelection = function(saleId, isChecked) {
+    if (isChecked) orderPickerSelectedKeys.add(String(saleId));
+    else orderPickerSelectedKeys.delete(String(saleId));
+    const btn = document.getElementById('btn-confirm-add-items');
+    if (btn) btn.innerText = `Agregar seleccionados (${orderPickerSelectedKeys.size})`;
+};
+
+window.renderOrderPickerList = function() {
+    const listEl = document.getElementById('order-picker-list');
+    if (!listEl) return;
+    const queryEl = document.getElementById('order-picker-search');
+    const q = queryEl ? normalizeText(queryEl.value) : '';
+
+    const existingIds = new Set(currentOrderItems.map(it => String(it.id).toUpperCase()).filter(Boolean));
+
+    const available = allSales.filter(s => {
+        if (s.status.toLowerCase().includes('vendido')) return false;
+        if (existingIds.has(String(s.id).toUpperCase())) return false;
+        if (!q) return true;
+        const searchable = normalizeText(`${s.id} ${s.name} ${s.size} ${s.color} ${s.price}`);
+        return searchable.includes(q);
+    });
+
+    if (available.length === 0) {
+        listEl.innerHTML = '<p style="text-align:center; color:#777; font-size:0.85rem; padding:12px;">No hay más artículos disponibles en venta que coincidan.</p>';
+        return;
+    }
+
+    listEl.innerHTML = available.map(s => {
+        const checked = orderPickerSelectedKeys.has(String(s.id)) ? 'checked' : '';
+        const thumb = s.images[0] || 'img/proximamente.png';
+        return `
+            <label class="order-picker-row">
+                <input type="checkbox" ${checked} onchange="togglePickerSelection('${s.id}', this.checked)">
+                <img src="${thumb}" alt="${s.name}">
+                <div style="flex:1;">
+                    <strong>${s.name}</strong> <span style="color:#777;">(${s.id})</span><br>
+                    <span>Talla: <strong>${s.size}</strong> | Color: ${s.color} | <strong style="color:#b89122;">$${Number(s.price).toFixed(2)}</strong></span>
+                </div>
+            </label>
+        `;
+    }).join('');
+};
+
+window.confirmAddPickerItems = function() {
+    if (orderPickerSelectedKeys.size === 0) {
+        alert('Selecciona al menos un artículo para añadir al pedido.');
+        return;
+    }
+    orderPickerSelectedKeys.forEach(saleId => {
+        const s = allSales.find(item => String(item.id) === String(saleId));
+        if (s) {
+            currentOrderItems.push({
+                id: s.id,
+                name: s.name,
+                size: s.size,
+                color: s.color,
+                price: Number(s.price || 0),
+                image: s.images[0] || 'img/proximamente.png',
+                status: s.status
+            });
+        }
+    });
+    orderPickerSelectedKeys.clear();
+    isOrderPickerOpen = false;
+    currentOrderDirty = true;
+    renderSaleCitaDetail();
+};
+
+window.saveOrderChanges = async function() {
+    if (!currentDetailCita) return;
+    const btn = document.getElementById('btn-save-order-changes');
+    if (btn) { btn.disabled = true; btn.innerText = 'Guardando...'; }
+
+    try {
+        const updatedDressText = buildOrderSummaryString(currentOrderItems);
+        const res = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: 'updateAppointmentOrder',
+                id: currentDetailCita.id,
+                dress: updatedDressText
+            })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'No se pudieron guardar los cambios.');
+
+        currentDetailCita.dress = updatedDressText;
+        currentOrderDirty = false;
+        alert('¡Pedido actualizado!');
+        renderSaleCitaDetail();
+        loadAppointments();
+    } catch (err) {
+        alert('Error: ' + err.message);
+        if (btn) { btn.disabled = false; btn.innerText = '💾 Guardar cambios'; }
+    }
+};
+
+window.completeSaleOrder = async function() {
+    if (!currentDetailCita) return;
+    if (currentOrderItems.length === 0) {
+        alert('No hay artículos en el pedido para marcar como vendidos. Añade al menos uno o cancela la cita.');
+        return;
+    }
+
+    const total = currentOrderItems.reduce((sum, it) => sum + Number(it.price || 0), 0);
+    if (!confirm(`¿Finalizar esta cita y marcar ${currentOrderItems.length} artículo(s) como VENDIDO?\n\nTotal: $${total.toFixed(2)} MXN\nDesaparecerán de la página pública de ventas.`)) {
+        return;
+    }
+
+    const btn = document.getElementById('btn-mark-sold');
+    if (btn) { btn.disabled = true; btn.innerText = 'Procesando venta...'; }
+
+    try {
+        const finalDressText = buildOrderSummaryString(currentOrderItems);
+        const res = await fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                action: 'completeSaleAppointment',
+                id: currentDetailCita.id,
+                dress: finalDressText,
+                items: currentOrderItems.map(it => ({ id: it.id, name: it.name, size: it.size }))
+            })
+        });
+        const data = await res.json();
+        if (!data.success) throw new Error(data.error || 'No se pudo completar la venta.');
+
+        alert(`¡Venta finalizada! ${data.markedCount} artículo(s) marcado(s) como Vendido.`);
+        citaDetailModal.style.display = 'none';
+        loadAppointments();
+        loadSales();
+    } catch (err) {
+        alert('Error: ' + err.message);
+        if (btn) { btn.disabled = false; btn.innerText = '✅ Marcar como Vendido'; }
+    }
+};
+
+async function renderRentCitaDetail(c) {
+    const bodyEl = document.getElementById('cita-detail-body');
+    const [y, m, d] = c.date.split('-').map(Number);
+    const prettyDate = (y && m && d)
+        ? new Date(y, m - 1, d).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+        : c.date;
+
+    const stLow = c.status.toLowerCase();
+    const cleanPhone = c.phone.replace(/\D/g, '');
+    const waPhone = cleanPhone.length === 10 ? `52${cleanPhone}` : cleanPhone;
+    const phoneHtml = cleanPhone
+        ? `<a href="https://wa.me/${waPhone}" target="_blank" class="cita-phone-link">📲 ${c.phone} (Abrir WhatsApp)</a>`
+        : 'Sin teléfono registrado';
+
     const rawDress = String(c.dress || '').trim();
+    let itemsSectionHtml = '';
 
     if (!rawDress || normalizeText(rawDress) === 'consulta general') {
         itemsSectionHtml = `
             <h3 class="cita-detail-section-title">Vestido / Pedido</h3>
             <p style="color:#666; font-size:0.9rem; margin-bottom:16px;">Consulta general — La clienta no seleccionó un vestido específico al agendar.</p>
         `;
-    } else if (/^pedido\s*\(\d+\):/i.test(rawDress)) {
-        // Pedido múltiple del carrito de Ventas
-        const match = rawDress.match(/^Pedido\s*\(\d+\):\s*(.+?)(?:\s*—\s*Total:\s*(.+))?$/i);
-        const listPart = match ? match[1] : rawDress;
-        const totalText = match && match[2] ? match[2].trim() : '';
-        const itemsArr = listPart.split('|').map(s => s.trim()).filter(Boolean);
-
-        const cardsHtml = itemsArr.map(entry => {
-            const mItem = entry.match(/^(.+?)\s*\(Talla:\s*([^,]+),\s*Color:\s*([^,]+),\s*\$?([\d.,]+)\)$/i);
-            const itemName = mItem ? mItem[1].trim() : entry;
-            const itemSize = mItem ? mItem[2].trim() : '';
-            const itemColor = mItem ? mItem[3].trim() : '';
-            const itemPrice = mItem ? mItem[4].trim() : '';
-
-            const found = allSales.find(s => normalizeText(s.name) === normalizeText(itemName));
-            const thumb = (found && found.images[0]) ? found.images[0] : 'img/proximamente.png';
-
-            return `
-                <div class="cita-detail-dress-card">
-                    <img src="${thumb}" alt="${itemName}">
-                    <div class="cita-detail-dress-info">
-                        <h4>${itemName}</h4>
-                        ${itemSize ? `<span><strong>Talla elegida:</strong> ${itemSize}</span>` : ''}
-                        ${itemColor ? `<span><strong>Color:</strong> ${itemColor}</span>` : ''}
-                        ${itemPrice ? `<span><strong>Precio de venta:</strong> $${itemPrice} MXN</span>` : ''}
-                        ${found ? `<span style="color:#777; font-size:0.8rem;">ID en inventario: ${found.id} (${found.status})</span>` : ''}
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        itemsSectionHtml = `
-            <h3 class="cita-detail-section-title">Artículos del Pedido (${itemsArr.length})</h3>
-            <div class="cita-detail-items">${cardsHtml}</div>
-            ${totalText ? `<div class="cita-detail-total-bar"><span>Total del Pedido:</span><span>${totalText}</span></div>` : ''}
-        `;
     } else {
-        // Vestido individual (de Renta o de Venta)
-        const cleanName = rawDress.replace(/\s*\(En Venta\)\s*$/i, '').trim();
-        const catalogPool = isVenta ? allSales : await ensureRentDressesLoaded();
-        const matches = catalogPool.filter(item => normalizeText(item.name) === normalizeText(cleanName));
-
+        const rentPool = await ensureRentDressesLoaded();
+        const matches = rentPool.filter(item => normalizeText(item.name) === normalizeText(rawDress));
         if (matches.length > 0) {
             const first = matches[0];
             const thumb = first.images[0] || 'img/proximamente.png';
             const sizesList = Array.from(new Set(matches.map(x => x.size))).join(', ');
             const idsList = matches.map(x => x.id).join(', ');
-            const priceLabel = isVenta ? `Precio de venta: $${first.price} MXN` : `Renta: $${first.price} MXN / noche`;
-            const depLabel = isVenta ? `Apartado / Anticipo: $${first.deposit} MXN` : `Depósito reembolsable: $${first.deposit} MXN`;
-
             itemsSectionHtml = `
                 <h3 class="cita-detail-section-title">Vestido de Interés</h3>
                 <div class="cita-detail-items">
@@ -531,7 +801,7 @@ window.openCitaDetail = async function(citaId) {
                             <h4>${first.name}</h4>
                             <span><strong>Color:</strong> ${first.color}</span>
                             <span><strong>Talla(s) en inventario:</strong> ${sizesList}</span>
-                            <span><strong>${priceLabel}</strong> | ${depLabel}</span>
+                            <span><strong>Renta: $${first.price} MXN / noche</strong> | Depósito reembolsable: $${first.deposit} MXN</span>
                             <span style="color:#777; font-size:0.8rem;">ID(s): ${idsList}</span>
                         </div>
                     </div>
@@ -548,7 +818,7 @@ window.openCitaDetail = async function(citaId) {
     bodyEl.innerHTML = `
         <div class="cita-detail-client-box">
             <div class="cita-time-row" style="margin-bottom:4px;">
-                ${typeBadgeHtml}
+                <span class="cita-type-badge cita-type-renta">👗 Cita de Renta</span>
                 <span class="cita-time-badge">${c.time}</span>
                 <span class="status-badge ${stLow === 'atendida' ? 'status-disponible' : (stLow === 'cancelada' ? 'status-rentado' : 'status-custom')}">${c.status}</span>
             </div>
@@ -565,7 +835,7 @@ window.openCitaDetail = async function(citaId) {
             <button type="button" class="btn btn-delete" onclick="deleteCita('${c.id}')">🗑️ Eliminar</button>
         </div>
     `;
-};
+}
 
 // --- MODO SELECCIÓN PARA MOVER A VESTIDOS ---
 function updateMoveDressesButton() {
