@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <link rel="stylesheet" href="admin.css?v=2">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Admin | MJ Vestidos</title>
@@ -268,7 +269,14 @@
             </div>
         </div>
     </div>
-
+    <!-- MODAL DETALLE DE CITA -->
+    <div id="cita-detail-modal" class="admin-modal">
+        <div class="admin-modal-content cita-detail-modal-content">
+            <span class="modal-close" id="close-cita-detail-modal">&times;</span>
+            <h2 class="card-title">Detalle de la Cita</h2>
+            <div id="cita-detail-body"></div>
+        </div>
+    </div>
     <script>
         // --- CONFIGURACIÓN ---
         const CLAVE_SECRETA = 'MJ2026';
@@ -525,7 +533,30 @@
             const listEl = document.getElementById('agenda-list');
             if (dayCitas.length === 0) {
                 listEl.innerHTML = '<p class="status-msg">No hay citas agendadas para este día.</p>';
-                return;
+            const phoneHtml = cleanPhone
+                    ? `<a href="https://wa.me/${waPhone}" target="_blank" class="cita-phone-link" onclick="event.stopPropagation()">📲 ${c.phone}</a>`
+                    : 'Sin teléfono';
+
+                return `
+                    <div class="cita-item ${itemClass}" onclick="openCitaDetail('${c.id}')">
+                        <div class="cita-item-info">
+                            <div class="cita-time-row">
+                                <span class="cita-time-badge">${c.time}</span>
+                                ${typeBadgeHtml}
+                                <strong>${c.client}</strong>
+                                <span class="status-badge ${badgeClass}">${c.status}</span>
+                            </div>
+                            <div><strong>Detalle:</strong> ${c.dress}</div>
+                            <div><strong>Contacto:</strong> ${phoneHtml}</div>
+                            <span class="cita-click-hint">👆 Haz clic para ver ficha completa del vestido / pedido</span>
+                        </div>
+                        <div class="cita-item-actions">
+                            ${stLow !== 'atendida' ? `<button type="button" class="btn btn-available" onclick="event.stopPropagation(); updateCitaStatus('${c.id}', 'Atendida')">✅ Atendida</button>` : ''}
+                            ${stLow !== 'cancelada' ? `<button type="button" class="btn btn-edit" onclick="event.stopPropagation(); updateCitaStatus('${c.id}', 'Cancelada')">✖️ Cancelar</button>` : ''}
+                            <button type="button" class="btn btn-delete" title="Eliminar cita" onclick="event.stopPropagation(); deleteCita('${c.id}')">🗑️</button>
+                        </div>
+                    </div>
+                `;
             }
 
             listEl.innerHTML = dayCitas.map(c => {
@@ -618,7 +649,170 @@
                 alert('Error: ' + err.message);
             }
         };
+        // --- MODAL DETALLE DE CITA EN ADMIN ---
+        let cachedSalesItems = null;
+        const citaDetailModal = document.getElementById('cita-detail-modal');
+        const closeCitaDetailBtn = document.getElementById('close-cita-detail-modal');
+        if (closeCitaDetailBtn) closeCitaDetailBtn.onclick = () => { citaDetailModal.style.display = 'none'; };
+        window.addEventListener('click', (e) => { if (e.target === citaDetailModal) citaDetailModal.style.display = 'none'; });
 
+        async function ensureSalesItemsLoaded() {
+            if (cachedSalesItems !== null) return cachedSalesItems;
+            cachedSalesItems = [];
+            try {
+                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=VENTAS&tqx=out:json&t=${Date.now()}`;
+                const res = await fetch(url);
+                const text = await res.text();
+                const json = JSON.parse(text.substring(47).slice(0, -2));
+                const rows = (json.table && json.table.rows) ? json.table.rows : [];
+                rows.forEach(row => {
+                    const firstCell = row && row.c && row.c[0] && row.c[0].v ? String(row.c[0].v).trim() : '';
+                    if (firstCell && firstCell.toUpperCase() !== 'ID' && firstCell.toUpperCase() !== 'ID ARTICULO') {
+                        const imgStr = row.c[7] && row.c[7].v ? String(row.c[7].v) : '';
+                        cachedSalesItems.push({
+                            id: firstCell,
+                            name: row.c[2] && row.c[2].v ? String(row.c[2].v) : 'Sin nombre',
+                            size: row.c[3] && row.c[3].v ? String(row.c[3].v) : 'Única',
+                            price: row.c[4] && row.c[4].v ? Number(row.c[4].v) : 0,
+                            deposit: row.c[5] && row.c[5].v ? Number(row.c[5].v) : 0,
+                            color: row.c[6] && row.c[6].v ? String(row.c[6].v) : '',
+                            images: imgStr ? imgStr.split(',').map(i => i.trim()).filter(Boolean) : [],
+                            status: row.c[8] && row.c[8].v ? String(row.c[8].v) : 'En Venta'
+                        });
+                    }
+                });
+            } catch (e) {
+                console.warn('No se pudo cargar inventario de ventas:', e);
+            }
+            return cachedSalesItems;
+        }
+
+        window.openCitaDetail = async function(citaId) {
+            const c = allAppointments.find(item => String(item.id) === String(citaId));
+            if (!c) return;
+
+            const bodyEl = document.getElementById('cita-detail-body');
+            bodyEl.innerHTML = '<p class="status-msg">Cargando información de la cita...</p>';
+            citaDetailModal.style.display = 'block';
+
+            const [y, m, d] = c.date.split('-').map(Number);
+            const prettyDate = (y && m && d)
+                ? new Date(y, m - 1, d).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+                : c.date;
+
+            const isVenta = c.type.toLowerCase().includes('venta');
+            const stLow = c.status.toLowerCase();
+            const typeBadgeHtml = isVenta
+                ? '<span class="cita-type-badge cita-type-venta">🏷️ Cita de Venta</span>'
+                : '<span class="cita-type-badge cita-type-renta">👗 Cita de Renta</span>';
+
+            const cleanPhone = c.phone.replace(/\D/g, '');
+            const waPhone = cleanPhone.length === 10 ? `52${cleanPhone}` : cleanPhone;
+            const phoneHtml = cleanPhone
+                ? `<a href="https://wa.me/${waPhone}" target="_blank" class="cita-phone-link">📲 ${c.phone} (Abrir WhatsApp)</a>`
+                : 'Sin teléfono registrado';
+
+            let itemsSectionHtml = '';
+            const rawDress = String(c.dress || '').trim();
+
+            if (!rawDress || normalizeText(rawDress) === 'consulta general') {
+                itemsSectionHtml = `
+                    <h3 class="cita-detail-section-title">Vestido / Pedido</h3>
+                    <p style="color:#666; font-size:0.9rem; margin-bottom:16px;">Consulta general — La clienta no seleccionó un vestido específico al agendar.</p>
+                `;
+            } else if (/^pedido\s*\(\d+\):/i.test(rawDress)) {
+                const salesPool = await ensureSalesItemsLoaded();
+                const match = rawDress.match(/^Pedido\s*\(\d+\):\s*(.+?)(?:\s*—\s*Total:\s*(.+))?$/i);
+                const listPart = match ? match[1] : rawDress;
+                const totalText = match && match[2] ? match[2].trim() : '';
+                const itemsArr = listPart.split('|').map(s => s.trim()).filter(Boolean);
+
+                const cardsHtml = itemsArr.map(entry => {
+                    const mItem = entry.match(/^(.+?)\s*\(Talla:\s*([^,]+),\s*Color:\s*([^,]+),\s*\$?([\d.,]+)\)$/i);
+                    const itemName = mItem ? mItem[1].trim() : entry;
+                    const itemSize = mItem ? mItem[2].trim() : '';
+                    const itemColor = mItem ? mItem[3].trim() : '';
+                    const itemPrice = mItem ? mItem[4].trim() : '';
+
+                    const found = salesPool.find(s => normalizeText(s.name) === normalizeText(itemName));
+                    const thumb = (found && found.images[0]) ? found.images[0] : 'img/proximamente.png';
+
+                    return `
+                        <div class="cita-detail-dress-card">
+                            <img src="${thumb}" alt="${itemName}">
+                            <div class="cita-detail-dress-info">
+                                <h4>${itemName}</h4>
+                                ${itemSize ? `<span><strong>Talla elegida:</strong> ${itemSize}</span>` : ''}
+                                ${itemColor ? `<span><strong>Color:</strong> ${itemColor}</span>` : ''}
+                                ${itemPrice ? `<span><strong>Precio de venta:</strong> $${itemPrice} MXN</span>` : ''}
+                                ${found ? `<span style="color:#777; font-size:0.8rem;">ID en inventario: ${found.id} (${found.status})</span>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                itemsSectionHtml = `
+                    <h3 class="cita-detail-section-title">Artículos del Pedido (${itemsArr.length})</h3>
+                    <div class="cita-detail-items">${cardsHtml}</div>
+                    ${totalText ? `<div class="cita-detail-total-bar"><span>Total del Pedido:</span><span>${totalText}</span></div>` : ''}
+                `;
+            } else {
+                const cleanName = rawDress.replace(/\s*\(En Venta\)\s*$/i, '').trim();
+                const catalogPool = isVenta ? await ensureSalesItemsLoaded() : allDresses;
+                const matches = catalogPool.filter(item => normalizeText(item.name) === normalizeText(cleanName));
+
+                if (matches.length > 0) {
+                    const first = matches[0];
+                    const thumb = first.images[0] || 'img/proximamente.png';
+                    const sizesList = Array.from(new Set(matches.map(x => x.size))).join(', ');
+                    const idsList = matches.map(x => x.id).join(', ');
+                    const priceLabel = isVenta ? `Precio de venta: $${first.price} MXN` : `Renta: $${first.price} MXN / noche`;
+                    const depLabel = isVenta ? `Apartado / Anticipo: $${first.deposit} MXN` : `Depósito reembolsable: $${first.deposit} MXN`;
+
+                    itemsSectionHtml = `
+                        <h3 class="cita-detail-section-title">Vestido de Interés</h3>
+                        <div class="cita-detail-items">
+                            <div class="cita-detail-dress-card">
+                                <img src="${thumb}" alt="${first.name}">
+                                <div class="cita-detail-dress-info">
+                                    <h4>${first.name}</h4>
+                                    <span><strong>Color:</strong> ${first.color}</span>
+                                    <span><strong>Talla(s) en inventario:</strong> ${sizesList}</span>
+                                    <span><strong>${priceLabel}</strong> | ${depLabel}</span>
+                                    <span style="color:#777; font-size:0.8rem;">ID(s): ${idsList}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    itemsSectionHtml = `
+                        <h3 class="cita-detail-section-title">Vestido / Detalle</h3>
+                        <p style="color:#444; font-size:0.92rem; margin-bottom:16px;"><strong>${rawDress}</strong></p>
+                    `;
+                }
+            }
+
+            bodyEl.innerHTML = `
+                <div class="cita-detail-client-box">
+                    <div class="cita-time-row" style="margin-bottom:4px;">
+                        ${typeBadgeHtml}
+                        <span class="cita-time-badge">${c.time}</span>
+                        <span class="status-badge ${stLow === 'atendida' ? 'status-disponible' : (stLow === 'cancelada' ? 'status-rentado' : 'status-custom')}">${c.status}</span>
+                    </div>
+                    <div><strong>Fecha:</strong> <span style="text-transform:capitalize;">${prettyDate}</span></div>
+                    <div><strong>Clienta:</strong> ${c.client}</div>
+                    <div><strong>Teléfono:</strong> ${phoneHtml}</div>
+                </div>
+
+                ${itemsSectionHtml}
+
+                <div class="cita-detail-actions">
+                    ${stLow !== 'atendida' ? `<button type="button" class="btn btn-available" onclick="updateCitaStatus('${c.id}', 'Atendida'); document.getElementById('cita-detail-modal').style.display='none';">✅ Marcar Atendida</button>` : ''}
+                    ${stLow !== 'cancelada' ? `<button type="button" class="btn btn-edit" onclick="updateCitaStatus('${c.id}', 'Cancelada'); document.getElementById('cita-detail-modal').style.display='none';">✖️ Cancelar Cita</button>` : ''}
+                    <button type="button" class="btn btn-delete" onclick="deleteCita('${c.id}'); document.getElementById('cita-detail-modal').style.display='none';">🗑️ Eliminar</button>
+                </div>
+            `;
+        };
         // --- UTILIDADES GENERALES ---
         function normalizeText(str) {
             return String(str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
