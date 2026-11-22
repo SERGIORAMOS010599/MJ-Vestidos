@@ -96,6 +96,17 @@ function getBaseColorInfo(rawColor) {
     return { key: normalizeText(label), label, hex: '#d4af37' };
 }
 
+function getHermosilloTodayStr() {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Hermosillo',
+        year: 'numeric', month: '2-digit', day: '2-digit'
+    }).formatToParts(new Date());
+    const y = parts.find(p => p.type === 'year').value;
+    const m = parts.find(p => p.type === 'month').value;
+    const d = parts.find(p => p.type === 'day').value;
+    return `${y}-${m}-${d}`;
+}
+
 function parseSheetDateCell(cell) {
     if (!cell) return '';
     const raw = cell.v !== null && cell.v !== undefined ? String(cell.v).trim() : '';
@@ -798,11 +809,11 @@ class Catalog {
                 const clientName = document.getElementById('cita-client-name').value.trim();
                 const clientPhone = document.getElementById('cita-client-phone').value.trim();
                 const dressName = this.citaDressName;
+                const appointmentType = IS_SALES_CATALOG ? 'Cita de Venta' : 'Cita de Renta';
 
                 const btn = document.getElementById('btn-confirm-cita');
                 btn.disabled = true;
                 btn.innerText = 'Confirmando cita...';
-                const appointmentType = IS_SALES_CATALOG ? 'Cita de Venta' : 'Cita de Renta';
 
                 try {
                     const res = await fetch(SCRIPT_URL, {
@@ -829,7 +840,24 @@ class Catalog {
                     const waMsg = dressName
                         ? `Hola, acabo de agendar ${motivoTexto} en MJ Vestidos para el ${prettyDate} a las ${this.selectedTime}. Estoy interesada en ${dressName}. Mi nombre es ${clientName}.`
                         : `Hola, acabo de agendar ${motivoTexto} en MJ Vestidos para el ${prettyDate} a las ${this.selectedTime}. Me gustaría conocer sus vestidos disponibles. Mi nombre es ${clientName}.`;
-                    const waUrl = `https://wa.me/526623175465?text=${encodeURIComponent(waMsg)}`;} catch (err) {
+                    const waUrl = `https://wa.me/526623175465?text=${encodeURIComponent(waMsg)}`;
+
+                    document.getElementById('cita-body').style.display = 'none';
+                    const successBox = document.getElementById('cita-success-box');
+                    successBox.style.display = 'block';
+                    successBox.innerHTML = `
+                        <h3>¡Cita Confirmada! ✅</h3>
+                        <p>
+                            Te esperamos el <strong>${prettyDate}</strong> a las <strong>${this.selectedTime}</strong> (hora de Hermosillo).
+                            ${dressName ? `<br>Vestido de interés: <strong>${dressName}</strong>` : ''}
+                        </p>
+                        <a href="${waUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:13px 26px;background:#25d366;color:#fff;text-decoration:none;border-radius:6px;font-weight:700;margin-bottom:10px;">
+                            📲 Confirmar también por WhatsApp
+                        </a>
+                    `;
+
+                    this.loadBookedSlots();
+                } catch (err) {
                     alert(err.message);
                 } finally {
                     btn.disabled = false;
