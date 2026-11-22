@@ -306,7 +306,7 @@ function renderAgendaForSelectedDay() {
         const stLow = c.status.toLowerCase();
         let itemClass = '';
         let badgeClass = 'status-custom';
-        if (stLow === 'atendida') { itemClass = 'status-atendida'; badgeClass = 'status-disponible'; }
+        if (stLow === 'atendida' || stLow === 'vendida') { itemClass = 'status-atendida'; badgeClass = 'status-disponible'; }
         else if (stLow === 'cancelada') { itemClass = 'status-cancelada'; badgeClass = 'status-rentado'; }
 
         const isVenta = c.type.toLowerCase().includes('venta');
