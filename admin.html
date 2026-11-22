@@ -342,18 +342,22 @@
             return h * 60 + min;
         }
 
-        function parseSheetDateCell(cell) {
-            if (!cell || !cell.v) return '';
-            const raw = String(cell.v).trim();
-            // Formato Date(YYYY, M, D) de Google Visualization
-            const dateMatch = raw.match(/^Date\((\d+),(\d+),(\d+)/);
-            if (dateMatch) {
-                const y = dateMatch[1];
-                const m = String(Number(dateMatch[2]) + 1).padStart(2, '0');
-                const d = String(Number(dateMatch[3])).padStart(2, '0');
-                return `${y}-${m}-${d}`;
+        function parseSheetTimeCell(cell) {
+            if (!cell) return '';
+            const raw = cell.v !== null && cell.v !== undefined ? String(cell.v).trim() : '';
+            const dtMatch = raw.match(/^Date\(\d+,\d+,\d+,(\d+),(\d+)/);
+            if (dtMatch) {
+                let h = Number(dtMatch[1]);
+                const m = String(Number(dtMatch[2])).padStart(2, '0');
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                h = h % 12;
+                if (h === 0) h = 12;
+                return `${h}:${m} ${ampm}`;
             }
-            return raw.replace(/^'/, '');
+            const str = (cell.f ? String(cell.f) : raw).replace(/^'/, '').trim().toUpperCase();
+            const ampmMatch = str.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/);
+            if (ampmMatch) return `${Number(ampmMatch[1])}:${ampmMatch[2]} ${ampmMatch[3]}`;
+            return str;
         }
 
         // --- SESIÓN COMPARTIDA (1 HORA DE INACTIVIDAD) ---
