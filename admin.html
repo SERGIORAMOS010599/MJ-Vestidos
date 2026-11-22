@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <link rel="stylesheet" href="admin.css?v=2">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Admin | MJ Vestidos</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="admin.css?v=2">
 </head>
 <body>
 
@@ -15,7 +14,7 @@
         <h2>MJ Vestidos</h2>
         <p class="auth-subtitle">Panel de Administración</p>
         <input type="password" id="admin-pin" placeholder="Clave de acceso">
-        <button id="btn-unlock" class="btn btn-gold btn-unlock">Entrar al Panel</button>
+        <button type="button" id="btn-unlock" class="btn btn-gold btn-unlock">Entrar al Panel</button>
     </div>
 
     <header class="admin-header">
@@ -269,6 +268,7 @@
             </div>
         </div>
     </div>
+
     <!-- MODAL DETALLE DE CITA -->
     <div id="cita-detail-modal" class="admin-modal">
         <div class="admin-modal-content cita-detail-modal-content">
@@ -277,6 +277,7 @@
             <div id="cita-detail-body"></div>
         </div>
     </div>
+
     <script>
         // --- CONFIGURACIÓN ---
         const CLAVE_SECRETA = 'MJ2026';
@@ -291,6 +292,7 @@
         // --- ESTADO GLOBAL ---
         let allDresses = [];
         let allAppointments = [];
+        let cachedSalesItems = null;
         let keptImages = [];
         let currentRentDress = null;
         let currentReleaseDress = null;
@@ -318,8 +320,9 @@
         const rentStartInput = document.getElementById('r-start-date');
         const rentEndInput = document.getElementById('r-end-date');
         const releaseModal = document.getElementById('release-modal');
+        const citaDetailModal = document.getElementById('cita-detail-modal');
 
-        // --- UTILIDADES DE FECHA (HERMOSILLO) ---
+        // --- UTILIDADES DE FECHA Y HORA (HERMOSILLO) ---
         function getHermosilloTodayStr() {
             const parts = new Intl.DateTimeFormat('en-CA', {
                 timeZone: 'America/Hermosillo',
@@ -348,6 +351,19 @@
             if (ampm === 'PM' && h !== 12) h += 12;
             if (ampm === 'AM' && h === 12) h = 0;
             return h * 60 + min;
+        }
+
+        function parseSheetDateCell(cell) {
+            if (!cell || cell.v === null || cell.v === undefined) return '';
+            const raw = String(cell.v).trim();
+            const dateMatch = raw.match(/^Date\((\d+),(\d+),(\d+)/);
+            if (dateMatch) {
+                const y = dateMatch[1];
+                const m = String(Number(dateMatch[2]) + 1).padStart(2, '0');
+                const d = String(Number(dateMatch[3])).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            }
+            return raw.replace(/^'/, '').trim();
         }
 
         function parseSheetTimeCell(cell) {
@@ -447,10 +463,9 @@
                 rows.forEach(row => {
                     const idVal = row && row.c && row.c[0] && row.c[0].v ? String(row.c[0].v).trim() : '';
                     if (idVal && idVal.toUpperCase() !== 'ID_CITA' && idVal.toUpperCase() !== 'ID') {
-                        allAppointments.push({
-                            const dressVal = row.c[5] && row.c[5].v ? String(row.c[5].v).trim() : 'Consulta general';
+                        const dressVal = row.c[5] && row.c[5].v ? String(row.c[5].v).trim() : 'Consulta general';
                         const rawType = row.c[7] && row.c[7].v ? String(row.c[7].v).trim() : '';
-                        const inferredType = rawType || (dressVal.toLowerCase().includes('venta') ? 'Cita de Venta' : 'Cita de Renta');
+                        const inferredType = rawType || (dressVal.toLowerCase().includes('venta') || dressVal.toLowerCase().startsWith('pedido') ? 'Cita de Venta' : 'Cita de Renta');
 
                         allAppointments.push({
                             id: idVal,
@@ -491,7 +506,6 @@
             const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
             const todayStr = getHermosilloTodayStr();
 
-            // Días que tienen al menos una cita no cancelada
             const datesWithCitas = new Set(
                 allAppointments
                     .filter(c => c.status.toLowerCase() !== 'cancelada')
@@ -533,7 +547,24 @@
             const listEl = document.getElementById('agenda-list');
             if (dayCitas.length === 0) {
                 listEl.innerHTML = '<p class="status-msg">No hay citas agendadas para este día.</p>';
-            const phoneHtml = cleanPhone
+                return;
+            }
+
+            listEl.innerHTML = dayCitas.map(c => {
+                const stLow = c.status.toLowerCase();
+                let itemClass = '';
+                let badgeClass = 'status-custom';
+                if (stLow === 'atendida') { itemClass = 'status-atendida'; badgeClass = 'status-disponible'; }
+                else if (stLow === 'cancelada') { itemClass = 'status-cancelada'; badgeClass = 'status-rentado'; }
+
+                const isVenta = c.type.toLowerCase().includes('venta');
+                const typeBadgeHtml = isVenta
+                    ? '<span class="cita-type-badge cita-type-venta">🏷️ Cita de Venta</span>'
+                    : '<span class="cita-type-badge cita-type-renta">👗 Cita de Renta</span>';
+
+                const cleanPhone = c.phone.replace(/\D/g, '');
+                const waPhone = cleanPhone.length === 10 ? `52${cleanPhone}` : cleanPhone;
+                const phoneHtml = cleanPhone
                     ? `<a href="https://wa.me/${waPhone}" target="_blank" class="cita-phone-link" onclick="event.stopPropagation()">📲 ${c.phone}</a>`
                     : 'Sin teléfono';
 
@@ -554,43 +585,6 @@
                             ${stLow !== 'atendida' ? `<button type="button" class="btn btn-available" onclick="event.stopPropagation(); updateCitaStatus('${c.id}', 'Atendida')">✅ Atendida</button>` : ''}
                             ${stLow !== 'cancelada' ? `<button type="button" class="btn btn-edit" onclick="event.stopPropagation(); updateCitaStatus('${c.id}', 'Cancelada')">✖️ Cancelar</button>` : ''}
                             <button type="button" class="btn btn-delete" title="Eliminar cita" onclick="event.stopPropagation(); deleteCita('${c.id}')">🗑️</button>
-                        </div>
-                    </div>
-                `;
-            }
-
-            listEl.innerHTML = dayCitas.map(c => {
-                const stLow = c.status.toLowerCase();
-                let itemClass = '';
-                let badgeClass = 'status-custom';
-                if (stLow === 'atendida') { itemClass = 'status-atendida'; badgeClass = 'status-disponible'; }
-                else if (stLow === 'cancelada') { itemClass = 'status-cancelada'; badgeClass = 'status-rentado'; }
-
-                const cleanPhone = c.phone.replace(/\D/g, '');
-                const waPhone = cleanPhone.length === 10 ? `52${cleanPhone}` : cleanPhone;
-                const phoneHtml = cleanPhone
-                    ? `<a href="https://wa.me/${waPhone}" target="_blank" class="cita-phone-link">📲 ${c.phone}</a>`
-                    : 'Sin teléfono';
-                const isVenta = c.type.toLowerCase().includes('venta');
-                const typeBadgeHtml = isVenta
-                    ? '<span class="cita-type-badge cita-type-venta">🏷️ Cita de Venta</span>'
-                    : '<span class="cita-type-badge cita-type-renta">👗 Cita de Renta</span>';
-                return `
-                    <div class="cita-item ${itemClass}">
-                        <div class="cita-item-info">
-                            <div class="cita-time-row">
-                                <span class="cita-time-badge">${c.time}</span>
-                                ${typeBadgeHtml}
-                                <strong>${c.client}</strong>
-                                <span class="status-badge ${badgeClass}">${c.status}</span>
-                            </div>
-                            <div><strong>Vestido de interés:</strong> ${c.dress}</div>
-                            <div><strong>Contacto:</strong> ${phoneHtml}</div>
-                        </div>
-                        <div class="cita-item-actions">
-                            ${stLow !== 'atendida' ? `<button type="button" class="btn btn-available" onclick="updateCitaStatus('${c.id}', 'Atendida')">✅ Atendida</button>` : ''}
-                            ${stLow !== 'cancelada' ? `<button type="button" class="btn btn-edit" onclick="updateCitaStatus('${c.id}', 'Cancelada')">✖️ Cancelar</button>` : ''}
-                            <button type="button" class="btn btn-delete" title="Eliminar cita" onclick="deleteCita('${c.id}')">🗑️</button>
                         </div>
                     </div>
                 `;
@@ -629,6 +623,7 @@
                 });
                 const data = await res.json();
                 if (!data.success) throw new Error(data.error || 'No se pudo actualizar la cita.');
+                if (citaDetailModal) citaDetailModal.style.display = 'none';
                 loadAppointments();
             } catch (err) {
                 alert('Error: ' + err.message);
@@ -644,14 +639,14 @@
                 });
                 const data = await res.json();
                 if (!data.success) throw new Error(data.error || 'No se pudo eliminar la cita.');
+                if (citaDetailModal) citaDetailModal.style.display = 'none';
                 loadAppointments();
             } catch (err) {
                 alert('Error: ' + err.message);
             }
         };
+
         // --- MODAL DETALLE DE CITA EN ADMIN ---
-        let cachedSalesItems = null;
-        const citaDetailModal = document.getElementById('cita-detail-modal');
         const closeCitaDetailBtn = document.getElementById('close-cita-detail-modal');
         if (closeCitaDetailBtn) closeCitaDetailBtn.onclick = () => { citaDetailModal.style.display = 'none'; };
         window.addEventListener('click', (e) => { if (e.target === citaDetailModal) citaDetailModal.style.display = 'none'; });
@@ -807,15 +802,16 @@
                 ${itemsSectionHtml}
 
                 <div class="cita-detail-actions">
-                    ${stLow !== 'atendida' ? `<button type="button" class="btn btn-available" onclick="updateCitaStatus('${c.id}', 'Atendida'); document.getElementById('cita-detail-modal').style.display='none';">✅ Marcar Atendida</button>` : ''}
-                    ${stLow !== 'cancelada' ? `<button type="button" class="btn btn-edit" onclick="updateCitaStatus('${c.id}', 'Cancelada'); document.getElementById('cita-detail-modal').style.display='none';">✖️ Cancelar Cita</button>` : ''}
-                    <button type="button" class="btn btn-delete" onclick="deleteCita('${c.id}'); document.getElementById('cita-detail-modal').style.display='none';">🗑️ Eliminar</button>
+                    ${stLow !== 'atendida' ? `<button type="button" class="btn btn-available" onclick="updateCitaStatus('${c.id}', 'Atendida')">✅ Marcar Atendida</button>` : ''}
+                    ${stLow !== 'cancelada' ? `<button type="button" class="btn btn-edit" onclick="updateCitaStatus('${c.id}', 'Cancelada')">✖️ Cancelar Cita</button>` : ''}
+                    <button type="button" class="btn btn-delete" onclick="deleteCita('${c.id}')">🗑️ Eliminar</button>
                 </div>
             `;
         };
+
         // --- UTILIDADES GENERALES ---
         function normalizeText(str) {
-            return String(str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            return String(str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
         }
 
         function getCurrentMonthKey() {
