@@ -3,269 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MJ Vestidos | Vestidos en Venta</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Playfair+Display:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=4">
+    <title>Ventas | MJ Vestidos</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="ventas.css">
 </head>
-<body class="sales-page">
+<body>
 
-    <header class="navbar">
-        <div class="logo">MJ Vestidos</div>
-        <nav>
-            <ul>
-                <li><a href="index.html#inicio">Inicio</a></li>
-                <li><a href="index.html#catalogo">Catálogo</a></li>
-                <li><a href="en-venta.html" class="nav-active">Vestidos en Venta</a></li>
-                <li><a href="#" id="nav-agenda-cita">Agenda tu Cita</a></li>
-            </ul>
-        </nav>
+    <!-- PANTALLA DE BLOQUEO -->
+    <div id="auth-overlay">
+        <h2>MJ Vestidos</h2>
+        <p class="auth-subtitle">Sección de Ventas</p>
+        <input type="password" id="admin-pin" placeholder="Clave de acceso">
+        <button type="button" id="btn-unlock" class="btn btn-gold btn-unlock">Entrar a Ventas</button>
+    </div>
+
+    <header class="admin-header">
+        <h1>Ventas | MJ Vestidos</h1>
+        <div class="header-nav">
+            <a href="admin.html" class="btn-nav-admin">⬅️ Volver a Admin</a>
+            <a href="index.html">Ver Catálogo</a>
+        </div>
     </header>
 
-    <section id="inicio" class="hero">
-        <div class="hero-runway" aria-hidden="true">
-            <div id="hero-runway-track" class="hero-runway-track"></div>
-        </div>
-        <div class="hero-overlay" aria-hidden="true"></div>
+    <div class="container">
+        <!-- FORMULARIO CREAR / EDITAR EN VENTAS -->
+        <div class="card">
+            <h2 id="form-title" class="card-title">Agregar Artículo a Ventas</h2>
+            <form id="sales-form">
+                <input type="hidden" id="edit-id">
 
-        <div class="hero-content">
-            <h1>Vestidos en Venta</h1>
-            <p>Piezas exclusivas disponibles para ser tuyas para siempre.</p>
-            <a href="#catalogo" class="btn-primary">Ver Vestidos en Venta</a>
-        </div>
-    </section>
-
-    <section id="catalogo" class="catalog-section">
-        <h2>Colección en Venta</h2>
-        <div class="divider"></div>
-        <div id="dress-container" class="grid-container"></div>
-        <div id="pagination-controls" class="pagination-container"></div>
-    </section>
-
-    <footer id="contacto">
-        <div class="contact-profile">
-            <img src="img/Majo.png" alt="Maria Jose Molina" class="profile-img">
-            <h3>María José Molina</h3>
-            <p class="subtitle">Atención Personalizada</p>
-            <p>Tel: 662 317 5465</p>
-        </div>
-
-        <div style="text-align: center; margin-top: 25px; margin-bottom: 25px;">
-            <p style="margin-bottom: 15px; font-size: 0.95rem; color: #777;">Síguenos y contáctanos en nuestras redes</p>
-            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 12px;">
-                <a href="https://www.instagram.com/mjvestidos" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 24px; background-color: #111; color: #d4af37; text-decoration: none; font-weight: bold; font-size: 0.95rem; border-radius: 30px; border: 1px solid #d4af37; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
-                    </svg>
-                    @MJVESTIDOS
-                </a>
-                <a href="https://www.facebook.com/share/1GdZxJ799d/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 24px; background-color: #111; color: #d4af37; text-decoration: none; font-weight: bold; font-size: 0.95rem; border-radius: 30px; border: 1px solid #d4af37; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
-                    </svg>
-                    FACEBOOK
-                </a>
-                <a href="https://wa.me/526623175465?text=Hola%20María%20José,%20me%20interesa%20un%20vestido%20en%20venta%20de%20MJ%20Vestidos." target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 24px; background-color: #111; color: #d4af37; text-decoration: none; font-weight: bold; font-size: 0.95rem; border-radius: 30px; border: 1px solid #d4af37; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
-                    </svg>
-                    WHATSAPP
-                </a>
-            </div>
-        </div>
-
-        <div class="footer-info">
-            <p>&copy; 2026 MJ Vestidos. Todos los derechos reservados.</p>
-            <p>Hermosillo, Sonora | Contacto: info@mjvestidos.com</p>
-        </div>
-    </footer>
-
-    <!-- Botón flotante Carrito de Compras -->
-    <button type="button" id="btn-open-cart" class="float-btn-circle cart-float" title="Ver mi carrito">
-        <span id="cart-count-badge" class="cart-count-badge">0</span>
-        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="9" cy="21" r="1"></circle>
-            <circle cx="20" cy="21" r="1"></circle>
-            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-        </svg>
-    </button>
-
-    <!-- Botón flotante Filtro (Lupa) -->
-    <button type="button" id="btn-open-filter" class="float-btn-circle filter-float" title="Filtrar vestidos en venta">
-        <span id="filter-active-dot" class="filter-active-dot"></span>
-        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
-    </button>
-
-    <!-- MODAL DE DETALLES DEL VESTIDO -->
-    <div id="booking-modal" class="modal">
-        <div class="modal-content" style="max-width: 850px;">
-            <span class="close-btn">&times;</span>
-            <div class="modal-grid" style="align-items: start; gap: 30px;">
-                <div class="modal-left">
-                    <img id="modal-dress-img" src="" alt="Artículo Seleccionado" style="width: 100%; max-height: 58vh; object-fit: contain; padding: 15px; background: radial-gradient(circle at center, #2b2b2b 0%, #0a0a0a 100%); box-shadow: 0 15px 40px rgba(0,0,0,0.4); border: 1px solid #000; outline: 1px solid #d4af37; outline-offset: -8px;">
-                    <div id="modal-thumbnails" style="display: flex; gap: 10px; margin-top: 15px; overflow-x: auto; padding-bottom: 5px; justify-content: center;"></div>
-                </div>
-
-                <div class="modal-right" style="display: flex; flex-direction: column; gap: 14px;">
-                    <div>
-                        <span id="modal-dress-type" style="display: inline-block; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1.5px; color: #888; font-weight: 600; margin-bottom: 4px;"></span>
-                        <h2 id="modal-dress-name" style="margin: 0; font-size: 1.7rem; color: #111;">Nombre del Vestido</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="s-type">Tipo de Artículo *</label>
+                        <input type="text" id="s-type" placeholder="Ej. Vestido, Accesorio, Bolsa" value="Vestido" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="s-name">Nombre del Artículo *</label>
+                        <input type="text" id="s-name" placeholder="Ej. Rojo Mangas" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="s-color">Color *</label>
+                        <input type="text" id="s-color" placeholder="Ej. Rojo" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="s-price">Precio de Venta (MXN) *</label>
+                        <input type="number" id="s-price" placeholder="1200" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="s-deposit">Depósito / Anticipo (MXN)</label>
+                        <input type="number" id="s-deposit" placeholder="0" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="s-status">Estado del Producto *</label>
+                        <select id="s-status" required>
+                            <option value="En Venta">En Venta</option>
+                            <option value="Vendido">Vendido</option>
+                            <option value="Apartado">Apartado</option>
+                        </select>
                     </div>
 
-                    <div id="modal-status-badge" style="display: inline-block; align-self: flex-start; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;"></div>
-
-                    <div style="background: #faf8f3; border: 1px solid #ece5d5; border-radius: 6px; padding: 16px;">
-                        <p id="modal-dress-price" style="font-size: 1.35rem; color: #b89122; font-weight: 700; margin: 0 0 6px 0;"></p>
-                        <p id="modal-dress-deposit" style="font-size: 0.95rem; color: #444; margin: 0;"></p>
-                    </div>
-
-                    <div style="display: grid; gap: 10px; font-size: 0.95rem; color: #333; padding: 6px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee;">
-                        <p style="margin: 0;"><strong>Color:</strong> <span id="modal-dress-color"></span></p>
-                        <div>
-                            <strong>Selecciona tu talla:</strong>
-                            <div id="modal-dress-sizes" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;"></div>
-                        </div>
-                        <p id="modal-dress-comments-wrap" style="margin: 4px 0 0 0; color: #555; line-height: 1.5;">
-                            <strong>Detalles:</strong> <span id="modal-dress-comments"></span>
-                        </p>
-                    </div>
-
-                    <button type="button" id="btn-add-to-cart" style="display: block; text-align: center; width: 100%; margin-top: 8px; padding: 15px; background-color: #111; color: #d4af37; border: 1px solid #d4af37; border-radius: 4px; font-size: 1.05rem; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;">
-                        🛒 Agregar al carrito
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- PANEL LATERAL DEL CARRITO -->
-    <div id="cart-overlay" class="filter-overlay"></div>
-    <aside id="cart-drawer" class="filter-drawer">
-        <div class="filter-drawer-header">
-            <h3>Mi Carrito</h3>
-            <button type="button" id="btn-close-cart" class="filter-close-btn">&times;</button>
-        </div>
-
-        <div class="filter-drawer-body">
-            <div id="cart-items-list" class="cart-items-list"></div>
-        </div>
-
-        <div class="filter-drawer-footer cart-footer">
-            <div class="cart-total-row">
-                <span>Total del pedido:</span>
-                <span id="cart-total-amount" class="cart-total-amount">$0.00 MXN</span>
-            </div>
-            <button type="button" id="btn-checkout-cart" class="btn-apply-filters" style="width: 100%;" disabled>
-                Agendar cita para mi pedido
-            </button>
-        </div>
-    </aside>
-
-    <!-- PANEL LATERAL DE FILTROS -->
-    <div id="filter-overlay" class="filter-overlay"></div>
-    <aside id="filter-drawer" class="filter-drawer">
-        <div class="filter-drawer-header">
-            <h3>Filtrar</h3>
-            <button type="button" id="btn-close-filter" class="filter-close-btn">&times;</button>
-        </div>
-
-        <div class="filter-drawer-body">
-            <div>
-                <div class="filter-group-title">Ordenar por</div>
-                <div class="filter-options-wrap">
-                    <button type="button" class="filter-chip" data-sort="asc">Precio Ascendente</button>
-                    <button type="button" class="filter-chip" data-sort="desc">Precio Descendente</button>
-                </div>
-            </div>
-
-            <div>
-                <div class="filter-group-title">Talla</div>
-                <div id="filter-sizes-list" class="filter-options-wrap"></div>
-            </div>
-
-            <div>
-                <div class="filter-group-title">Color</div>
-                <div id="filter-colors-list" class="filter-options-wrap"></div>
-            </div>
-
-            <div>
-                <div class="price-range-header">
-                    <div class="filter-group-title" style="margin:0;">Precio</div>
-                    <span id="filter-price-label" class="price-range-display">$0 — $0</span>
-                </div>
-                <div class="dual-range-wrap">
-                    <div class="dual-range-track"></div>
-                    <div id="price-range-fill" class="dual-range-fill"></div>
-                    <input type="range" id="price-min-range" class="dual-range-input" min="0" max="5000" step="50" value="0">
-                    <input type="range" id="price-max-range" class="dual-range-input" min="0" max="5000" step="50" value="5000">
-                </div>
-            </div>
-        </div>
-
-        <div class="filter-drawer-footer">
-            <button type="button" id="btn-clear-filters" class="btn-clear-filters">Limpiar</button>
-            <button type="button" id="btn-apply-filters" class="btn-apply-filters">Ver 0 artículos</button>
-        </div>
-    </aside>
-
-    <!-- MODAL DE AGENDAR CITA -->
-    <div id="cita-modal" class="modal">
-        <div class="modal-content cita-modal-content">
-            <div class="cita-header">
-                <div class="cita-brand">
-                    <img src="img/logo.png" alt="Logo MJ Vestidos" class="cita-logo" onerror="this.style.display='none'">
-                    <div>
-                        <h2>MJ Vestidos</h2>
-                        <p id="cita-dress-subtitle">Agenda tu cita en MJ Vestidos</p>
-                    </div>
-                </div>
-                <button type="button" id="btn-close-cita" class="cita-close-btn">&times;</button>
-            </div>
-
-            <div id="cita-body" class="cita-body">
-                <div>
-                    <div class="cita-section-title">Selecciona Fecha y Hora</div>
-                    <div class="cal-nav">
-                        <button type="button" id="cal-prev-month">&lsaquo;</button>
-                        <span id="cal-month-label" class="cal-month-label">Noviembre 2026</span>
-                        <button type="button" id="cal-next-month">&rsaquo;</button>
-                    </div>
-                    <div class="cal-weekdays">
-                        <span>LUN</span><span>MAR</span><span>MIÉ</span><span>JUE</span><span>VIE</span><span>SÁB</span><span>DOM</span>
-                    </div>
-                    <div id="cal-days-grid" class="cal-days-grid"></div>
-
-                    <div class="cita-timezone">
-                        <strong>Zona horaria:</strong><br>
-                        🌎 Hermosillo, Sonora (<span id="hermosillo-clock">--:--</span>)
-                    </div>
-                </div>
-
-                <div class="cita-slots-col">
-                    <div id="cita-selected-date-label" class="cita-selected-date-label">Elige un día en el calendario</div>
-                    <div class="cita-avail-hint"><span class="cita-avail-dot"></span> Horarios disponibles (12h AM / PM)</div>
-
-                    <div id="cita-slots-list" class="cita-slots-list"></div>
-
-                    <form id="cita-confirm-form">
-                        <div class="cita-client-inputs">
-                            <input type="text" id="cita-client-name" placeholder="Tu Nombre Completo *" required>
-                            <input type="tel" id="cita-client-phone" placeholder="Tu Teléfono / WhatsApp *" required>
-                        </div>
-                        <button type="submit" id="btn-confirm-cita" class="btn-confirm-cita">Confirmar Cita</button>
-                    </form>
-                </div>
-            </div>
-
-            <div id="cita-success-box" class="cita-success-box" style="display: none;"></div>
-        </div>
-    </div>
-
-    <script>window.CATALOG_MODE = 'VENTAS';</script>
-    <script src="app.js?v=8"></script>
-</body>
-</html>
+                    <div class="form-group full">
+                        <label>Talla(s) * <small>(haz clic para seleccionar una o varias)</small></label>
+                        <div class="form-size-selector" id="s-size-selector">
+                            <button type="button" class="form-size-btn" data-size="XXS">XXS</button>
+                            <button type="button" class="form-size-btn" data-size="XS">XS</button
