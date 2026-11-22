@@ -1319,3 +1319,132 @@ body {
     padding-top: 12px;
     border-top: 1px solid #eee;
 }
+/* --- EDITOR DE PEDIDO EN DETALLE DE CITA --- */
+.cita-detail-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.cita-detail-header-row .cita-detail-section-title {
+    margin: 0;
+}
+
+.btn-add-order-item {
+    background: #111;
+    color: #d4af37;
+    border: 1px solid #d4af37;
+    padding: 7px 14px;
+    border-radius: 5px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-add-order-item:hover {
+    background: #d4af37;
+    color: #111;
+}
+
+.cita-detail-dress-card {
+    position: relative;
+}
+
+.btn-remove-order-item {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 28px;
+    height: 28px;
+    border-radius: 5px;
+    border: 1px solid #f5c6cb;
+    background: #fdecea;
+    color: #b71c1c;
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.btn-remove-order-item:hover {
+    background: #c0392b;
+    color: #fff;
+    border-color: #c0392b;
+}
+
+/* --- SELECTOR PARA AÑADIR ARTÍCULOS AL PEDIDO --- */
+.order-picker-box {
+    background: #fcfbf8;
+    border: 1px solid #d4af37;
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 14px;
+}
+
+.order-picker-search {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid #d5d1c8;
+    border-radius: 5px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.86rem;
+    margin-bottom: 10px;
+}
+
+.order-picker-search:focus {
+    outline: none;
+    border-color: #d4af37;
+}
+
+.order-picker-list {
+    max-height: 210px;
+    overflow-y: auto;
+    display: grid;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.order-picker-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: #fff;
+    border: 1px solid #ece5d5;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.84rem;
+}
+
+.order-picker-row:hover {
+    border-color: #d4af37;
+}
+
+.order-picker-row input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    accent-color: #111;
+    cursor: pointer;
+}
+
+.order-picker-row img {
+    width: 38px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.order-picker-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
