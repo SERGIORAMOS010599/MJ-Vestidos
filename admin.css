@@ -1196,3 +1196,23 @@ body {
         grid-template-columns: 1fr;
     }
 }
+.cita-type-badge {
+    font-size: 0.74rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.cita-type-renta {
+    background: #f4efe0;
+    color: #8a6d1c;
+    border: 1px solid #d4af37;
+}
+
+.cita-type-venta {
+    background: #e8f0fe;
+    color: #1a56db;
+    border: 1px solid #93c5fd;
+}
