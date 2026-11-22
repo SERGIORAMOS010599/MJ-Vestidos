@@ -440,13 +440,19 @@
                     const idVal = row && row.c && row.c[0] && row.c[0].v ? String(row.c[0].v).trim() : '';
                     if (idVal && idVal.toUpperCase() !== 'ID_CITA' && idVal.toUpperCase() !== 'ID') {
                         allAppointments.push({
+                            const dressVal = row.c[5] && row.c[5].v ? String(row.c[5].v).trim() : 'Consulta general';
+                        const rawType = row.c[7] && row.c[7].v ? String(row.c[7].v).trim() : '';
+                        const inferredType = rawType || (dressVal.toLowerCase().includes('venta') ? 'Cita de Venta' : 'Cita de Renta');
+
+                        allAppointments.push({
                             id: idVal,
                             date: parseSheetDateCell(row.c[1]),
-                            time: row.c[2] && row.c[2].v ? String(row.c[2].v).trim() : '',
+                            time: parseSheetTimeCell(row.c[2]),
                             client: row.c[3] && row.c[3].v ? String(row.c[3].v).trim() : 'Sin nombre',
                             phone: row.c[4] && row.c[4].v ? String(row.c[4].v).trim() : '',
-                            dress: row.c[5] && row.c[5].v ? String(row.c[5].v).trim() : 'Consulta general',
-                            status: row.c[6] && row.c[6].v ? String(row.c[6].v).trim() : 'Confirmada'
+                            dress: dressVal,
+                            status: row.c[6] && row.c[6].v ? String(row.c[6].v).trim() : 'Confirmada',
+                            type: inferredType
                         });
                     }
                 });
@@ -534,12 +540,16 @@
                 const phoneHtml = cleanPhone
                     ? `<a href="https://wa.me/${waPhone}" target="_blank" class="cita-phone-link">📲 ${c.phone}</a>`
                     : 'Sin teléfono';
-
+                const isVenta = c.type.toLowerCase().includes('venta');
+                const typeBadgeHtml = isVenta
+                    ? '<span class="cita-type-badge cita-type-venta">🏷️ Cita de Venta</span>'
+                    : '<span class="cita-type-badge cita-type-renta">👗 Cita de Renta</span>';
                 return `
                     <div class="cita-item ${itemClass}">
                         <div class="cita-item-info">
                             <div class="cita-time-row">
                                 <span class="cita-time-badge">${c.time}</span>
+                                ${typeBadgeHtml}
                                 <strong>${c.client}</strong>
                                 <span class="status-badge ${badgeClass}">${c.status}</span>
                             </div>
