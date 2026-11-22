@@ -96,15 +96,46 @@ function getBaseColorInfo(rawColor) {
     return { key: normalizeText(label), label, hex: '#d4af37' };
 }
 
-function getHermosilloTodayStr() {
-    const parts = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'America/Hermosillo',
-        year: 'numeric', month: '2-digit', day: '2-digit'
-    }).formatToParts(new Date());
-    const y = parts.find(p => p.type === 'year').value;
-    const m = parts.find(p => p.type === 'month').value;
-    const d = parts.find(p => p.type === 'day').value;
-    return `${y}-${m}-${d}`;
+function parseSheetDateCell(cell) {
+    if (!cell) return '';
+    const raw = cell.v !== null && cell.v !== undefined ? String(cell.v).trim() : '';
+    const dateMatch = raw.match(/^Date\((\d+),(\d+),(\d+)/);
+    if (dateMatch) {
+        const y = dateMatch[1];
+        const m = String(Number(dateMatch[2]) + 1).padStart(2, '0');
+        const d = String(Number(dateMatch[3])).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+    return raw.replace(/^'/, '').trim();
+}
+
+function parseSheetTimeCell(cell) {
+    if (!cell) return '';
+    const raw = cell.v !== null && cell.v !== undefined ? String(cell.v).trim() : '';
+    const dtMatch = raw.match(/^Date\(\d+,\d+,\d+,(\d+),(\d+)/);
+    if (dtMatch) {
+        let h = Number(dtMatch[1]);
+        const m = String(Number(dtMatch[2])).padStart(2, '0');
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12;
+        if (h === 0) h = 12;
+        return `${h}:${m} ${ampm}`;
+    }
+    const str = (cell.f ? String(cell.f) : raw).replace(/^'/, '').trim().toUpperCase();
+    const ampmMatch = str.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/);
+    if (ampmMatch) {
+        return `${Number(ampmMatch[1])}:${ampmMatch[2]} ${ampmMatch[3]}`;
+    }
+    const h24Match = str.match(/^(\d{1,2}):(\d{2})/);
+    if (h24Match) {
+        let h = Number(h24Match[1]);
+        const m = h24Match[2];
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12;
+        if (h === 0) h = 12;
+        return `${h}:${m} ${ampm}`;
+    }
+    return str;
 }
 
 class Dress {
