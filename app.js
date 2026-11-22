@@ -261,6 +261,9 @@ class Catalog {
                     const color    = row.c[6] && row.c[6].v ? String(row.c[6].v).trim() : 'N/A';
                     const imgStr   = row.c[7] && row.c[7].v ? String(row.c[7].v) : '';
                     const status   = row.c[8] && row.c[8].v ? String(row.c[8].v).trim() : (IS_SALES_CATALOG ? 'En Venta' : 'Disponible');
+                    if (IS_SALES_CATALOG && status.toLowerCase().includes('vendido')) {
+                        return;
+                    }
                     const comments = row.c[9] && row.c[9].v ? String(row.c[9].v).trim() : '';
                     const rawCtrl  = row.c[10] && row.c[10].v ? String(row.c[10].v) : '';
                     const rowRentals = getRowRentalsCount(rawCtrl);
