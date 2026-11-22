@@ -802,6 +802,7 @@ class Catalog {
                 const btn = document.getElementById('btn-confirm-cita');
                 btn.disabled = true;
                 btn.innerText = 'Confirmando cita...';
+                const appointmentType = IS_SALES_CATALOG ? 'Cita de Venta' : 'Cita de Renta';
 
                 try {
                     const res = await fetch(SCRIPT_URL, {
@@ -812,7 +813,8 @@ class Catalog {
                             time: this.selectedTime,
                             client: clientName,
                             phone: clientPhone,
-                            dress: dressName || 'Consulta general'
+                            dress: dressName || 'Consulta general',
+                            appointmentType: appointmentType
                         })
                     });
                     const data = await res.json();
@@ -823,27 +825,11 @@ class Catalog {
                         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
                     });
 
+                    const motivoTexto = IS_SALES_CATALOG ? 'una cita de compra/venta' : 'una cita de renta';
                     const waMsg = dressName
-                        ? `Hola, acabo de agendar una cita en MJ Vestidos para el ${prettyDate} a las ${this.selectedTime}. Estoy interesada en el vestido ${dressName}. Mi nombre es ${clientName}.`
-                        : `Hola, acabo de agendar una cita en MJ Vestidos para el ${prettyDate} a las ${this.selectedTime}. Me gustaría conocer sus vestidos disponibles. Mi nombre es ${clientName}.`;
-                    const waUrl = `https://wa.me/526623175465?text=${encodeURIComponent(waMsg)}`;
-
-                    document.getElementById('cita-body').style.display = 'none';
-                    const successBox = document.getElementById('cita-success-box');
-                    successBox.style.display = 'block';
-                    successBox.innerHTML = `
-                        <h3>¡Cita Confirmada! ✅</h3>
-                        <p>
-                            Te esperamos el <strong>${prettyDate}</strong> a las <strong>${this.selectedTime}</strong> (hora de Hermosillo).
-                            ${dressName ? `<br>Vestido de interés: <strong>${dressName}</strong>` : ''}
-                        </p>
-                        <a href="${waUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:13px 26px;background:#25d366;color:#fff;text-decoration:none;border-radius:6px;font-weight:700;margin-bottom:10px;">
-                            📲 Confirmar también por WhatsApp
-                        </a>
-                    `;
-
-                    this.loadBookedSlots();
-                } catch (err) {
+                        ? `Hola, acabo de agendar ${motivoTexto} en MJ Vestidos para el ${prettyDate} a las ${this.selectedTime}. Estoy interesada en ${dressName}. Mi nombre es ${clientName}.`
+                        : `Hola, acabo de agendar ${motivoTexto} en MJ Vestidos para el ${prettyDate} a las ${this.selectedTime}. Me gustaría conocer sus vestidos disponibles. Mi nombre es ${clientName}.`;
+                    const waUrl = `https://wa.me/526623175465?text=${encodeURIComponent(waMsg)}`;} catch (err) {
                     alert(err.message);
                 } finally {
                     btn.disabled = false;
@@ -863,8 +849,8 @@ class Catalog {
             const rows = (json.table && json.table.rows) ? json.table.rows : [];
 
             rows.forEach(row => {
-                const dateVal = row && row.c && row.c[1] && row.c[1].v ? String(row.c[1].v).trim() : '';
-                const timeVal = row && row.c && row.c[2] && row.c[2].v ? String(row.c[2].v).trim() : '';
+                const dateVal = row && row.c ? parseSheetDateCell(row.c[1]) : '';
+                const timeVal = row && row.c ? parseSheetTimeCell(row.c[2]) : '';
                 const statusVal = row && row.c && row.c[6] && row.c[6].v ? String(row.c[6].v).toLowerCase() : '';
                 if (dateVal && timeVal && dateVal.toUpperCase() !== 'FECHA' && statusVal !== 'cancelada') {
                     if (!this.bookedSlots[dateVal]) this.bookedSlots[dateVal] = new Set();
