@@ -1,6 +1,7 @@
 const SHEET_ID = '18gsvPp2HSMR0DKIfYfZijnwc_PyNV7ULch-UDEVupV0';
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwaKJxY7JErnXQUYi_OCTuKmGjyBoxlPe-RRcM_XmSkYrwRic2EK7nYSDN-W8VmmiSN/exec';
 const IS_SALES_CATALOG = window.CATALOG_MODE === 'VENTAS';
+const CART_STORAGE_KEY = 'mj_sales_cart';
 
 const TIME_SLOTS_12H = [
     '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
@@ -197,9 +198,14 @@ class Catalog {
         this.topRentedDresses = [];
         this.hasActiveFiltersFlag = false;
         this.selectedDress = null;
+        this.selectedModalSize = '';
+        this.citaMode = 'single'; // 'single' | 'general' | 'cart'
         this.citaDressName = '';
         this.currentPage = 1;
         this.itemsPerPage = 50;
+
+        // Carrito de compras (solo en página de Ventas)
+        this.cart = this.loadCart();
 
         this.filterState = {
             sort: '', // '' | 'popular' | 'asc' | 'desc'
@@ -221,6 +227,7 @@ class Catalog {
 
         this.initModalEvents();
         this.initFilterEvents();
+        this.initCartEvents();
         this.initCitaEvents();
         this.loadFromGoogleSheets();
     }
@@ -315,6 +322,155 @@ class Catalog {
             console.error("Error cargando la base de datos:", error);
             this.container.innerHTML = '<p style="text-align:center; width:100%; color:red;">No se pudo cargar el catálogo. Verifica tu conexión.</p>';
         }
+    }
+
+    // =========================================
+    // --- CARRITO DE COMPRAS (VENTAS) ---
+    // =========================================
+    loadCart() {
+        try {
+            const raw = localStorage.getItem(CART_STORAGE_KEY);
+            const parsed = raw ? JSON.parse(raw) : [];
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    saveCart() {
+        try {
+            localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(this.cart));
+        } catch (e) {
+            console.warn('No se pudo guardar el carrito:', e);
+        }
+    }
+
+    initCartEvents() {
+        if (!IS_SALES_CATALOG) return;
+
+        const overlay = document.getElementById('cart-overlay');
+        const drawer = document.getElementById('cart-drawer');
+        const btnOpen = document.getElementById('btn-open-cart');
+        const btnClose = document.getElementById('btn-close-cart');
+        const btnCheckout = document.getElementById('btn-checkout-cart');
+        const btnAdd = document.getElementById('btn-add-to-cart');
+
+        this.openCartDrawer = () => {
+            this.renderCart();
+            if (overlay) overlay.classList.add('open');
+            if (drawer) drawer.classList.add('open');
+        };
+        this.closeCartDrawer = () => {
+            if (overlay) overlay.classList.remove('open');
+            if (drawer) drawer.classList.remove('open');
+        };
+
+        if (btnOpen) btnOpen.addEventListener('click', this.openCartDrawer);
+        if (btnClose) btnClose.addEventListener('click', this.closeCartDrawer);
+        if (overlay) overlay.addEventListener('click', this.closeCartDrawer);
+
+        if (btnAdd) {
+            btnAdd.addEventListener('click', () => this.addToCart());
+        }
+
+        if (btnCheckout) {
+            btnCheckout.addEventListener('click', () => {
+                if (this.cart.length === 0) return;
+                this.closeCartDrawer();
+                this.openCitaModal('cart');
+            });
+        }
+
+        this.renderCart();
+    }
+
+    addToCart() {
+        if (!this.selectedDress) return;
+        const d = this.selectedDress;
+
+        if (d.status.toLowerCase().includes('vendido')) {
+            alert('Este artículo ya fue vendido.');
+            return;
+        }
+
+        if (!this.selectedModalSize) {
+            alert('Por favor selecciona una talla antes de agregar al carrito.');
+            return;
+        }
+
+        const itemKey = `${d.id}__${this.selectedModalSize}`;
+        const exists = this.cart.some(item => item.key === itemKey);
+        if (exists) {
+            alert(`"${d.name}" en talla ${this.selectedModalSize} ya está en tu carrito.`);
+            document.getElementById('booking-modal').style.display = 'none';
+            if (this.openCartDrawer) this.openCartDrawer();
+            return;
+        }
+
+        this.cart.push({
+            key: itemKey,
+            id: d.id,
+            name: d.name,
+            size: this.selectedModalSize,
+            color: d.color,
+            price: d.price,
+            image: d.images[0] || 'img/proximamente.png'
+        });
+
+        this.saveCart();
+        this.renderCart();
+        document.getElementById('booking-modal').style.display = 'none';
+        if (this.openCartDrawer) this.openCartDrawer();
+    }
+
+    removeFromCart(itemKey) {
+        this.cart = this.cart.filter(item => item.key !== itemKey);
+        this.saveCart();
+        this.renderCart();
+    }
+
+    getCartTotal() {
+        return this.cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
+    }
+
+    renderCart() {
+        const badge = document.getElementById('cart-count-badge');
+        const listEl = document.getElementById('cart-items-list');
+        const totalEl = document.getElementById('cart-total-amount');
+        const btnCheckout = document.getElementById('btn-checkout-cart');
+
+        if (badge) {
+            if (this.cart.length > 0) {
+                badge.style.display = 'inline-flex';
+                badge.innerText = this.cart.length;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        if (!listEl) return;
+
+        const total = this.getCartTotal();
+        if (totalEl) totalEl.innerText = `$${total.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN`;
+        if (btnCheckout) btnCheckout.disabled = this.cart.length === 0;
+
+        if (this.cart.length === 0) {
+            listEl.innerHTML = '<p class="cart-empty-msg">Tu carrito está vacío.<br>Selecciona los vestidos que te gusten y elige su talla para agregarlos aquí.</p>';
+            return;
+        }
+
+        listEl.innerHTML = this.cart.map(item => `
+            <div class="cart-item-card">
+                <img src="${item.image}" alt="${item.name}" class="cart-item-img">
+                <div class="cart-item-info">
+                    <h4>${item.name}</h4>
+                    <span><strong>Talla:</strong> ${item.size}</span>
+                    <span><strong>Color:</strong> ${item.color}</span>
+                    <span class="cart-item-price">$${Number(item.price).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN</span>
+                </div>
+                <button type="button" class="cart-remove-btn" title="Quitar del carrito" onclick="window.appCatalog.removeFromCart('${item.key}')">&times;</button>
+            </div>
+        `).join('');
     }
 
     // =========================================
@@ -716,9 +872,37 @@ class Catalog {
         statusEl.style.color = isUnavailable ? '#b71c1c' : '#1b7a43';
         statusEl.style.border = isUnavailable ? '1px solid #f5c6cb' : '1px solid #b7e4c7';
 
-        document.getElementById('modal-dress-sizes').innerHTML = d.sizes
-            .map(sz => `<span class="size-sphere">${sz}</span>`)
-            .join('');
+        const sizesContainer = document.getElementById('modal-dress-sizes');
+        sizesContainer.innerHTML = '';
+
+        if (IS_SALES_CATALOG) {
+            // En Ventas las esferitas son seleccionables antes de agregar al carrito
+            this.selectedModalSize = d.sizes.length === 1 ? d.sizes[0] : '';
+            d.sizes.forEach(sz => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'size-sphere selectable' + (sz === this.selectedModalSize ? ' selected-size' : '');
+                btn.innerText = sz;
+                btn.onclick = () => {
+                    this.selectedModalSize = sz;
+                    sizesContainer.querySelectorAll('.size-sphere').forEach(b => b.classList.remove('selected-size'));
+                    btn.classList.add('selected-size');
+                };
+                sizesContainer.appendChild(btn);
+            });
+
+            const btnAdd = document.getElementById('btn-add-to-cart');
+            if (btnAdd) {
+                btnAdd.disabled = isUnavailable;
+                btnAdd.style.opacity = isUnavailable ? '0.5' : '1';
+                btnAdd.style.cursor = isUnavailable ? 'not-allowed' : 'pointer';
+                btnAdd.innerText = isUnavailable ? 'Artículo Vendido' : '🛒 Agregar al carrito';
+            }
+        } else {
+            sizesContainer.innerHTML = d.sizes
+                .map(sz => `<span class="size-sphere">${sz}</span>`)
+                .join('');
+        }
 
         const commentsWrap = document.getElementById('modal-dress-comments-wrap');
         const commentsEl = document.getElementById('modal-dress-comments');
@@ -744,7 +928,7 @@ class Catalog {
         if (btnOpenCita) {
             btnOpenCita.addEventListener('click', () => {
                 modal.style.display = 'none';
-                this.openCitaModal(false);
+                this.openCitaModal('single');
             });
         }
 
@@ -752,7 +936,7 @@ class Catalog {
         if (navCitaBtn) {
             navCitaBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                this.openCitaModal(true);
+                this.openCitaModal('general');
             });
         }
     }
@@ -808,8 +992,21 @@ class Catalog {
 
                 const clientName = document.getElementById('cita-client-name').value.trim();
                 const clientPhone = document.getElementById('cita-client-phone').value.trim();
-                const dressName = this.citaDressName;
-                const appointmentType = IS_SALES_CATALOG ? 'Cita de Venta' : 'Cita de Renta';
+                const isCartOrder = this.citaMode === 'cart' && this.cart.length > 0;
+                const appointmentType = (IS_SALES_CATALOG || isCartOrder) ? 'Cita de Venta' : 'Cita de Renta';
+
+                let dressPayload = this.citaDressName || 'Consulta general';
+                let cartSnapshot = [];
+                let cartTotal = 0;
+
+                if (isCartOrder) {
+                    cartSnapshot = [...this.cart];
+                    cartTotal = this.getCartTotal();
+                    const summaryList = cartSnapshot
+                        .map(it => `${it.name} (Talla: ${it.size}, Color: ${it.color}, $${Number(it.price).toFixed(2)})`)
+                        .join(' | ');
+                    dressPayload = `Pedido (${cartSnapshot.length}): ${summaryList} — Total: $${cartTotal.toFixed(2)} MXN`;
+                }
 
                 const btn = document.getElementById('btn-confirm-cita');
                 btn.disabled = true;
@@ -824,7 +1021,7 @@ class Catalog {
                             time: this.selectedTime,
                             client: clientName,
                             phone: clientPhone,
-                            dress: dressName || 'Consulta general',
+                            dress: dressPayload,
                             appointmentType: appointmentType
                         })
                     });
@@ -836,10 +1033,28 @@ class Catalog {
                         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
                     });
 
-                    const motivoTexto = IS_SALES_CATALOG ? 'una cita de compra/venta' : 'una cita de renta';
-                    const waMsg = dressName
-                        ? `Hola, acabo de agendar ${motivoTexto} en MJ Vestidos para el ${prettyDate} a las ${this.selectedTime}. Estoy interesada en ${dressName}. Mi nombre es ${clientName}.`
-                        : `Hola, acabo de agendar ${motivoTexto} en MJ Vestidos para el ${prettyDate} a las ${this.selectedTime}. Me gustaría conocer sus vestidos disponibles. Mi nombre es ${clientName}.`;
+                    let waMsg = '';
+                    let detailHtml = '';
+
+                    if (isCartOrder) {
+                        const itemsLines = cartSnapshot
+                            .map(it => `- ${it.name} | Talla: ${it.size} | Color: ${it.color} | $${Number(it.price).toFixed(2)} MXN`)
+                            .join('\n');
+                        waMsg = `Hola, me interesa comprar los siguientes artículos:\n${itemsLines}\n\nTotal del pedido: $${cartTotal.toFixed(2)} MXN.\nAgendé cita para el día ${prettyDate} a la hora de ${this.selectedTime} a nombre de ${clientName}.`;
+                        detailHtml = `<br>Pedido de <strong>${cartSnapshot.length} artículo(s)</strong> — Total: <strong>$${cartTotal.toFixed(2)} MXN</strong>`;
+
+                        // Vaciar carrito al confirmar la cita del pedido
+                        this.cart = [];
+                        this.saveCart();
+                        this.renderCart();
+                    } else {
+                        const motivoTexto = IS_SALES_CATALOG ? 'una cita de compra/venta' : 'una cita de renta';
+                        waMsg = this.citaDressName
+                            ? `Hola, acabo de agendar ${motivoTexto} en MJ Vestidos para el ${prettyDate} a las ${this.selectedTime}. Estoy interesada en ${this.citaDressName}. Mi nombre es ${clientName}.`
+                            : `Hola, acabo de agendar ${motivoTexto} en MJ Vestidos para el ${prettyDate} a las ${this.selectedTime}. Me gustaría conocer sus vestidos disponibles. Mi nombre es ${clientName}.`;
+                        detailHtml = this.citaDressName ? `<br>Vestido de interés: <strong>${this.citaDressName}</strong>` : '';
+                    }
+
                     const waUrl = `https://wa.me/526623175465?text=${encodeURIComponent(waMsg)}`;
 
                     document.getElementById('cita-body').style.display = 'none';
@@ -849,10 +1064,10 @@ class Catalog {
                         <h3>¡Cita Confirmada! ✅</h3>
                         <p>
                             Te esperamos el <strong>${prettyDate}</strong> a las <strong>${this.selectedTime}</strong> (hora de Hermosillo).
-                            ${dressName ? `<br>Vestido de interés: <strong>${dressName}</strong>` : ''}
+                            ${detailHtml}
                         </p>
                         <a href="${waUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:13px 26px;background:#25d366;color:#fff;text-decoration:none;border-radius:6px;font-weight:700;margin-bottom:10px;">
-                            📲 Confirmar también por WhatsApp
+                            📲 Enviar pedido y confirmar por WhatsApp
                         </a>
                     `;
 
@@ -890,8 +1105,18 @@ class Catalog {
         }
     }
 
-    async openCitaModal(isGeneral = false) {
-        if (isGeneral || !this.selectedDress) {
+    async openCitaModal(mode = 'single') {
+        if (mode === true) mode = 'general';
+        if (mode === false) mode = 'single';
+        this.citaMode = mode;
+
+        if (mode === 'cart' && this.cart.length > 0) {
+            const total = this.getCartTotal();
+            this.citaDressName = '';
+            document.getElementById('cita-dress-subtitle').innerText =
+                `Pedido de ${this.cart.length} artículo(s) — Total: $${total.toFixed(2)} MXN`;
+        } else if (mode === 'general' || !this.selectedDress) {
+            this.citaMode = 'general';
             this.citaDressName = '';
             document.getElementById('cita-dress-subtitle').innerText = 'Agenda tu cita en MJ Vestidos';
         } else {
