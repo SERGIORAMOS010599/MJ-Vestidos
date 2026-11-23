@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Admin | MJ Vestidos</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="admin.css?v=2">
+    <link rel="stylesheet" href="admin.css?v=3">
 </head>
 <body>
 
@@ -306,6 +306,13 @@
         let calMonth = 0;
         let selectedCalDate = '';
 
+        // Estado del editor de pedidos en citas de venta
+        let currentDetailCita = null;
+        let currentOrderItems = [];
+        let currentOrderDirty = false;
+        let isOrderPickerOpen = false;
+        let orderPickerSelectedKeys = new Set();
+
         // --- REFERENCIAS DOM ---
         const authOverlay = document.getElementById('auth-overlay');
         const pinInput = document.getElementById('admin-pin');
@@ -582,7 +589,7 @@
                             <span class="cita-click-hint">👆 Haz clic para ver ficha completa del vestido / pedido</span>
                         </div>
                         <div class="cita-item-actions">
-                            ${stLow !==${(stLow !== 'atendida' && stLow !== 'vendida' && !isVenta) ? `<button type="button" class="btn btn-available" onclick="event.stopPropagation(); updateCitaStatus('${c.id}', 'Atendida')">✅ Atendida</button>` : ''}
+                            ${(stLow !== 'atendida' && stLow !== 'vendida' && !isVenta) ? `<button type="button" class="btn btn-available" onclick="event.stopPropagation(); updateCitaStatus('${c.id}', 'Atendida')">✅ Atendida</button>` : ''}
                             ${stLow !== 'cancelada' ? `<button type="button" class="btn btn-edit" onclick="event.stopPropagation(); updateCitaStatus('${c.id}', 'Cancelada')">✖️ Cancelar</button>` : ''}
                             <button type="button" class="btn btn-delete" title="Eliminar cita" onclick="event.stopPropagation(); deleteCita('${c.id}')">🗑️</button>
                         </div>
@@ -646,7 +653,9 @@
             }
         };
 
-        // --- MODAL DETALLE DE CITA EN ADMIN ---
+        // =========================================
+        // --- MODAL DETALLE DE CITA Y EDITOR DE PEDIDOS ---
+        // =========================================
         const closeCitaDetailBtn = document.getElementById('close-cita-detail-modal');
         if (closeCitaDetailBtn) closeCitaDetailBtn.onclick = () => { citaDetailModal.style.display = 'none'; };
         window.addEventListener('click', (e) => { if (e.target === citaDetailModal) citaDetailModal.style.display = 'none'; });
@@ -681,12 +690,6 @@
             }
             return cachedSalesItems;
         }
-
-        let currentDetailCita = null;
-        let currentOrderItems = [];
-        let currentOrderDirty = false;
-        let isOrderPickerOpen = false;
-        let orderPickerSelectedKeys = new Set();
 
         function buildOrderSummaryString(items) {
             if (!items || items.length === 0) return 'Consulta general';
@@ -762,7 +765,7 @@
 
             const isVenta = c.type.toLowerCase().includes('venta');
             if (isVenta) {
-                cachedSalesItems = null; // Refrescar inventario de ventas al abrir
+                cachedSalesItems = null;
                 const salesPool = await ensureSalesItemsLoaded();
                 currentOrderItems = parseSaleOrderItems(c.dress, salesPool);
                 renderSaleCitaDetail();
